@@ -1,26 +1,259 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
+/* ── Brand Tokens ──────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cream:       #E5DBD2;
+  --cream-light: #F2EDE9;
+  --cream-dark:  #D4C8BC;
+  --sage:        #5C6B50;
+  --sage-light:  #7A8B6A;
+  --sage-dark:   #404B38;
+  --gold:        #C9A96E;
+  --gold-light:  #E2C898;
+  --rosegold:    #C4927A;
+  --nude:        #E8D5C8;
+  --charcoal:    #2C2C2C;
+  --warm-white:  #FAF8F5;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Jost', system-ui, sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--warm-white);
+  --color-foreground:  var(--charcoal);
+  --font-sans: var(--font-body);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Reset & Base ──────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--warm-white);
+  color: var(--charcoal);
+  font-family: var(--font-body);
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Typography ───────────────────────────────────────────────────── */
+.font-display  { font-family: var(--font-display); }
+.font-body     { font-family: var(--font-body); }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; }
+::-webkit-scrollbar-track  { background: var(--cream-light); }
+::-webkit-scrollbar-thumb  { background: var(--sage-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sage); }
+
+/* ── Selection ─────────────────────────────────────────────────────── */
+::selection { background: var(--cream-dark); color: var(--sage-dark); }
+
+/* ── Grain Overlay ─────────────────────────────────────────────────── */
+.grain-overlay {
+  position: relative;
+}
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+.animate-fade-up   { animation: fadeUp 0.7s ease forwards; }
+.animate-fade-in   { animation: fadeIn 0.5s ease forwards; }
+.animate-slide-left{ animation: slideInLeft 0.6s ease forwards; }
+.animate-float     { animation: float 4s ease-in-out infinite; }
+
+.animate-delay-100 { animation-delay: 0.1s; opacity: 0; }
+.animate-delay-200 { animation-delay: 0.2s; opacity: 0; }
+.animate-delay-300 { animation-delay: 0.3s; opacity: 0; }
+.animate-delay-400 { animation-delay: 0.4s; opacity: 0; }
+.animate-delay-500 { animation-delay: 0.5s; opacity: 0; }
+
+/* ── Shimmer Skeleton ─────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--cream-light) 25%, var(--cream) 50%, var(--cream-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ── Glassmorphism ────────────────────────────────────────────────── */
+.glass {
+  background: rgba(250, 248, 245, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(229, 219, 210, 0.5);
+}
+
+/* ── Gold Border Accent ───────────────────────────────────────────── */
+.border-gold {
+  border-color: var(--gold);
+}
+
+.text-gold {
+  color: var(--gold);
+}
+
+.bg-cream        { background-color: var(--cream); }
+.bg-cream-light  { background-color: var(--cream-light); }
+.bg-sage         { background-color: var(--sage); }
+.text-sage       { color: var(--sage); }
+.text-sage-dark  { color: var(--sage-dark); }
+
+/* ── Product Card ─────────────────────────────────────────────────── */
+.product-card-img {
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.product-card:hover .product-card-img {
+  transform: scale(1.05);
+}
+
+/* ── Button Base ──────────────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--sage);
+  color: var(--cream-light);
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding: 0.875rem 2.5rem;
+  border: 1px solid var(--sage);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  background-color: var(--sage-dark);
+  border-color: var(--sage-dark);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--sage);
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding: 0.875rem 2.5rem;
+  border: 1px solid var(--sage);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-outline:hover {
+  background-color: var(--sage);
+  color: var(--cream-light);
+}
+
+.btn-gold {
+  background-color: var(--gold);
+  color: var(--warm-white);
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding: 0.875rem 2.5rem;
+  border: 1px solid var(--gold);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.btn-gold:hover {
+  background-color: var(--gold-light);
+  border-color: var(--gold-light);
+}
+
+/* ── Input ────────────────────────────────────────────────────────── */
+.input-elegant {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--cream-dark);
+  padding: 0.75rem 0;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 0.9375rem;
+  color: var(--charcoal);
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.input-elegant::placeholder {
+  color: var(--sage-light);
+  opacity: 0.7;
+}
+.input-elegant:focus {
+  border-bottom-color: var(--sage);
+}
+
+/* ── Divider ──────────────────────────────────────────────────────── */
+.divider-gold {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--gold);
+}
+.divider-gold::before,
+.divider-gold::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
 }
