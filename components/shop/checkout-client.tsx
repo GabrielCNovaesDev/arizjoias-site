@@ -49,6 +49,25 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
 
   const canContinue = items.length > 0 && !!selectedAddressId && !!selectedShipping;
 
+  function handleContinue(e: React.MouseEvent) {
+    if (!canContinue || !selectedAddr) return;
+    // Persist address to localStorage for the payment page
+    try {
+      localStorage.setItem('ariz-checkout-address', JSON.stringify({
+        recipientName: selectedAddr.recipient_name,
+        zipCode: selectedAddr.zip_code,
+        street: selectedAddr.street,
+        number: selectedAddr.number,
+        complement: selectedAddr.complement ?? undefined,
+        district: selectedAddr.district,
+        city: selectedAddr.city,
+        state: selectedAddr.state,
+      }));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
   function handleAddressSaved(id: string, newAddress: Address) {
     // Add to local list and select it — no reload needed
     setAddresses((prev) => [newAddress, ...prev]);
@@ -214,6 +233,7 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
           <Link
             href="/checkout/pagamento"
             className="az-btn az-btn-primary"
+            onClick={handleContinue}
             style={{
               display: 'inline-flex',
               opacity: canContinue ? 1 : 0.4,
