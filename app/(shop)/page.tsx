@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ProductCard, type ProductCardData } from '@/components/shop/product-card';
 import { ArizLogoMark } from '@/components/ui/ariz-logo';
 import { CategoryCard, InstagramGrid } from '@/components/shop/home-interactive';
+import { createClient } from '@/lib/supabase/server';
+import { centsToReais } from '@/lib/utils/currency';
 
 /* ── Icons ── */
 const IconArrowRight = ({ s = 14 }: { s?: number }) => (
@@ -32,7 +34,8 @@ const IconHeart = () => (
 );
 
 /* ── Data ── */
-const PRODUCTS: ProductCardData[] = [
+// Static data kept as fallback for editorial sections
+const STATIC_PRODUCTS: ProductCardData[] = [
   {
     id: 'flower-pendant-set',
     slug: 'conjunto-flor-de-cristal',
@@ -112,10 +115,7 @@ const PRODUCTS: ProductCardData[] = [
   },
 ];
 
-const NEW_ARRIVALS = PRODUCTS.filter((p) => p.tag === 'novo' || p.tag === 'exclusivo').slice(0, 4);
-const BEST_SELLERS = PRODUCTS.filter((p) => p.tag === 'mais amado' || !p.tag).slice(0, 4);
-
-const CATEGORIES = [
+const STATIC_CATEGORIES = [
   { name: 'Colares', img: '/assets/circle-pendant-necklace.png', count: 42, slug: 'colares' },
   { name: 'Brincos', img: '/assets/earring-crystal-hoop.png', count: 67, slug: 'brincos' },
   { name: 'Anéis', img: '/assets/butterfly-ring.png', count: 38, slug: 'aneis' },
@@ -173,7 +173,67 @@ function ProductGridSection({
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  // Fetch real data from DB
+  const [{ data: featuredProducts }, { data: dbCategories }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, slug, name, price_cents, promotional_price_cents, is_featured, categories(name), product_images(url, alt_text, display_order)')
+      .eq('is_active', true)
+      .eq('is_featured', true)
+      .order('created_at', { ascending: false })
+      .limit(8),
+    supabase
+      .from('categories')
+      .select('id, name, slug, image_url')
+      .order('display_order')
+      .limit(4),
+  ]);
+
+  // Map DB products to ProductCardData shape
+  function dbToCard(p: {
+    id: string;
+    slug: string;
+    name: string;
+    price_cents: number;
+    promotional_price_cents: number | null;
+    categories: { name: string } | null;
+    product_images: { url: string; alt_text: string | null; display_order: number }[];
+  }): ProductCardData {
+    const sorted = [...(p.product_images ?? [])].sort((a, b) => a.display_order - b.display_order);
+    return {
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      category: (p.categories as { name: string } | null)?.name ?? '',
+      price: p.price_cents / 100,
+      oldPrice: p.promotional_price_cents ? p.price_cents / 100 : undefined,
+      image: sorted[0]?.url ?? '/assets/flower-pendant-set-model.png',
+      alt: sorted[1]?.url,
+    };
+  }
+
+  const featuredCards: ProductCardData[] =
+    featuredProducts && featuredProducts.length > 0
+      ? featuredProducts.map(dbToCard)
+      : STATIC_PRODUCTS.filter((p) => p.tag === 'exclusivo' || p.tag === 'novo').slice(0, 4);
+
+  const newArrivals = featuredCards.slice(0, 4);
+  const bestSellers =
+    featuredCards.length > 4 ? featuredCards.slice(4, 8) : STATIC_PRODUCTS.filter((p) => p.tag === 'mais amado' || !p.tag).slice(0, 4);
+
+  // Map DB categories, fall back to static if empty
+  const categories =
+    dbCategories && dbCategories.length > 0
+      ? dbCategories.map((c) => ({
+          name: c.name,
+          img: c.image_url ?? '/assets/circle-pendant-necklace.png',
+          count: 0,
+          slug: c.slug,
+        }))
+      : STATIC_CATEGORIES;
   return (
     <>
       {/* ── Hero — split editorial ─────────────────────────────── */}
@@ -258,7 +318,7 @@ export default function HomePage() {
           </h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
-          {CATEGORIES.map((c, i) => (
+          {categories.map((c, i) => (
             <CategoryCard key={c.name} name={c.name} img={c.img} count={c.count} slug={c.slug} index={i} />
           ))}
         </div>
@@ -309,7 +369,7 @@ export default function HomePage() {
         eyebrow="recém chegadas"
         title={<>Novas peças, <em className="az-display-italic">velhos encantos</em></>}
         subtitle="As chegadas desta semana, escolhidas para quem gosta de ser a primeira a notar."
-        products={NEW_ARRIVALS}
+        products={newArrivals}
       />
 
       {/* ── Brand story ────────────────────────────────────────── */}
@@ -340,7 +400,7 @@ export default function HomePage() {
         eyebrow="mais amadas"
         title={<>Aquelas que <em className="az-display-italic">não voltam</em> para a vitrine</>}
         subtitle="Escolhidas pelas nossas clientes semana após semana."
-        products={BEST_SELLERS}
+        products={bestSellers}
       />
 
       {/* ── Values / trust strip ───────────────────────────────── */}

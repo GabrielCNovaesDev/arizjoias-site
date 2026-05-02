@@ -50,7 +50,8 @@ export async function proxy(request: NextRequest) {
       .single();
 
     if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url));
+      // Não-admins recebem 404 (não revela que a rota existe)
+      return NextResponse.rewrite(new URL('/not-found', request.url));
     }
   }
 

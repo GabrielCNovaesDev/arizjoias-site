@@ -1,8 +1,38 @@
-// Layout do painel admin — sem header/footer da loja
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
+import { AdminHeader } from '@/components/admin/admin-header';
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Double-check: proxy already blocks, but layout validates role server-side too
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login?next=/admin');
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') {
+    redirect('/');
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-surface)' }}>
-      <main>{children}</main>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-surface)' }}>
+      <AdminSidebar />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <AdminHeader />
+        <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
