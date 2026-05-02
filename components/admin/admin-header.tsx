@@ -1,21 +1,8 @@
-import { createClient } from '@/lib/supabase/server';
+interface AdminHeaderProps {
+  displayName: string;
+}
 
-export async function AdminHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = user
-    ? await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-    : { data: null };
-
-  const displayName = profile?.full_name ?? user?.email ?? 'Admin';
-
+export function AdminHeader({ displayName }: AdminHeaderProps) {
   return (
     <header
       style={{

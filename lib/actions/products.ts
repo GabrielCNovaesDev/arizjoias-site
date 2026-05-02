@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/actions/auth-guard';
+import { deleteImage } from '@/lib/supabase/storage';
 import { reaisToCents } from '@/lib/utils/currency';
 import { slugify } from '@/lib/utils/slugify';
 
@@ -23,8 +24,8 @@ function parseProductForm(formData: FormData) {
   const width_cm = parseFloat(formData.get('width_cm') as string) || 0;
   const height_cm = parseFloat(formData.get('height_cm') as string) || 0;
   const length_cm = parseFloat(formData.get('length_cm') as string) || 0;
-  const is_active = formData.get('is_active') === 'true';
-  const is_featured = formData.get('is_featured') === 'true';
+  const is_active = formData.getAll('is_active').includes('true');
+  const is_featured = formData.getAll('is_featured').includes('true');
 
   return {
     name,
@@ -48,7 +49,10 @@ function validateProduct(data: ReturnType<typeof parseProductForm>) {
   if (!data.name) return 'Nome é obrigatório.';
   if (!data.slug) return 'Slug é obrigatório.';
   if (isNaN(data.price_cents) || data.price_cents <= 0) return 'Preço inválido.';
-  if (data.promotional_price_cents !== null && data.promotional_price_cents >= data.price_cents) {
+  if (
+    data.promotional_price_cents !== null &&
+    (isNaN(data.promotional_price_cents) || data.promotional_price_cents >= data.price_cents)
+  ) {
     return 'Preço promocional deve ser menor que o preço normal.';
   }
   if (data.stock < 0) return 'Estoque não pode ser negativo.';
@@ -56,9 +60,10 @@ function validateProduct(data: ReturnType<typeof parseProductForm>) {
 }
 
 export async function createProduct(formData: FormData) {
-  const supabase = await createClient();
-  const data = parseProductForm(formData);
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
+  const data = parseProductForm(formData);
   const validationError = validateProduct(data);
   if (validationError) return { error: validationError };
 
@@ -83,16 +88,14 @@ export async function createProduct(formData: FormData) {
   const imageUrls = formData.getAll('image_urls[]') as string[];
   const imageAlts = formData.getAll('image_alts[]') as string[];
 
-  if (imageUrls.length > 0) {
-    const images = imageUrls
-      .filter(Boolean)
-      .map((url, i) => ({
-        product_id: product.id,
-        url,
-        alt_text: imageAlts[i] || data.name,
-        display_order: i,
-      }));
-
+  const validImages = imageUrls.filter(Boolean);
+  if (validImages.length > 0) {
+    const images = validImages.map((url, i) => ({
+      product_id: product.id,
+      url,
+      alt_text: imageAlts[i] || data.name,
+      display_order: i,
+    }));
     await supabase.from('product_images').insert(images);
   }
 
@@ -102,9 +105,10 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
-  const supabase = await createClient();
-  const data = parseProductForm(formData);
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
+  const data = parseProductForm(formData);
   const validationError = validateProduct(data);
   if (validationError) return { error: validationError };
 
@@ -125,22 +129,40 @@ export async function updateProduct(id: string, formData: FormData) {
 
   if (error) return { error: error.message };
 
-  // Replace images
-  const imageUrls = formData.getAll('image_urls[]') as string[];
-  const imageAlts = formData.getAll('image_alts[]') as string[];
+  // Fetch old images to remove orphaned Storage files
+  const { data: oldImages } = await supabase
+    .from('product_images')
+    .select('url')
+    .eq('product_id', id);
 
+  const newImageUrls = (formData.getAll('image_urls[]') as string[]).filter(Boolean);
+
+  // Remove Storage files that are no longer referenced
+  if (oldImages) {
+    for (const img of oldImages) {
+      if (!newImageUrls.includes(img.url)) {
+        try {
+          const url = new URL(img.url);
+          const pathMatch = url.pathname.match(/\/object\/public\/products\/(.+)/);
+          if (pathMatch) await deleteImage('products', pathMatch[1]);
+        } catch {
+          // Non-fatal
+        }
+      }
+    }
+  }
+
+  // Replace image records
   await supabase.from('product_images').delete().eq('product_id', id);
 
-  if (imageUrls.filter(Boolean).length > 0) {
-    const images = imageUrls
-      .filter(Boolean)
-      .map((url, i) => ({
-        product_id: id,
-        url,
-        alt_text: imageAlts[i] || data.name,
-        display_order: i,
-      }));
-
+  if (newImageUrls.length > 0) {
+    const imageAlts = formData.getAll('image_alts[]') as string[];
+    const images = newImageUrls.map((url, i) => ({
+      product_id: id,
+      url,
+      alt_text: imageAlts[i] || data.name,
+      display_order: i,
+    }));
     await supabase.from('product_images').insert(images);
   }
 
@@ -151,13 +173,33 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = await createClient();
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
-  // Delete images first
+  // Fetch images before deleting
+  const { data: images } = await supabase
+    .from('product_images')
+    .select('url')
+    .eq('product_id', id);
+
+  // Delete image records
   await supabase.from('product_images').delete().eq('product_id', id);
 
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) return { error: error.message };
+
+  // Remove Storage files (best-effort)
+  if (images) {
+    for (const img of images) {
+      try {
+        const url = new URL(img.url);
+        const pathMatch = url.pathname.match(/\/object\/public\/products\/(.+)/);
+        if (pathMatch) await deleteImage('products', pathMatch[1]);
+      } catch {
+        // Non-fatal
+      }
+    }
+  }
 
   revalidatePath('/admin/produtos');
   revalidatePath('/');
@@ -165,7 +207,8 @@ export async function deleteProduct(id: string) {
 }
 
 export async function duplicateProduct(id: string) {
-  const supabase = await createClient();
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
   const { data: product } = await supabase
     .from('products')
@@ -175,19 +218,19 @@ export async function duplicateProduct(id: string) {
 
   if (!product) return { error: 'Produto não encontrado.' };
 
-  const newSlug = slugify(`${product.name} copia`);
+  const baseSlug = slugify(`${product.name} copia`);
 
-  // Ensure unique slug
-  let finalSlug = newSlug;
+  // Ensure unique slug (max 20 attempts)
+  let finalSlug = baseSlug;
   let attempt = 1;
-  while (true) {
+  while (attempt <= 20) {
     const { data: dup } = await supabase
       .from('products')
       .select('id')
       .eq('slug', finalSlug)
       .single();
     if (!dup) break;
-    finalSlug = `${newSlug}-${++attempt}`;
+    finalSlug = `${baseSlug}-${++attempt}`;
   }
 
   const { data: newProduct, error } = await supabase
@@ -213,7 +256,7 @@ export async function duplicateProduct(id: string) {
 
   if (error) return { error: error.message };
 
-  // Copy images
+  // Copy image records (same URLs — no need to duplicate Storage files)
   if (product.product_images?.length > 0) {
     const images = product.product_images.map(
       (img: { url: string; alt_text: string | null; display_order: number }) => ({

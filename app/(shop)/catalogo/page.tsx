@@ -68,7 +68,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
       slug: p.slug,
       name: p.name,
       category: (p.categories as { name: string } | null)?.name ?? '',
-      price: p.price_cents / 100,
+      price: (p.promotional_price_cents ?? p.price_cents) / 100,
       oldPrice: p.promotional_price_cents ? p.price_cents / 100 : undefined,
       image: sorted[0]?.url ?? '/assets/flower-pendant-set-model.png',
       alt: sorted[1]?.url,
@@ -80,8 +80,10 @@ export default async function CatalogoPage({ searchParams }: Props) {
     const clean = Object.fromEntries(
       Object.entries(merged).filter(([, v]) => v !== undefined && v !== '')
     ) as Record<string, string>;
-    delete clean.page;
-    return `/catalogo?${new URLSearchParams(clean)}`;
+    // Only remove page if not explicitly set in overrides
+    if (!('page' in overrides)) delete clean.page;
+    const qs = new URLSearchParams(clean).toString();
+    return qs ? `/catalogo?${qs}` : '/catalogo';
   }
 
   return (
@@ -257,7 +259,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 48 }}>
               {page > 1 && (
                 <Link
-                  href={`${buildUrl({})}&page=${page - 1}`}
+                  href={`${buildUrl({ page: String(page - 1) })}`}
                   style={{ border: '1px solid var(--color-primary-dark)', padding: '8px 16px', fontSize: 11, color: 'var(--color-text-muted)' }}
                 >
                   ← Anterior
@@ -268,7 +270,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
               </span>
               {page < totalPages && (
                 <Link
-                  href={`${buildUrl({})}&page=${page + 1}`}
+                  href={`${buildUrl({ page: String(page + 1) })}`}
                   style={{ border: '1px solid var(--color-primary-dark)', padding: '8px 16px', fontSize: 11, color: 'var(--color-text-muted)' }}
                 >
                   Próxima →

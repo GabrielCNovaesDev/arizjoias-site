@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ProductCard, type ProductCardData } from '@/components/shop/product-card';
 import { ProductGallery } from '@/components/shop/product-gallery';
+import { AddToCart } from '@/components/shop/add-to-cart';
 import { centsToReais } from '@/lib/utils/currency';
 
 interface Props {
@@ -55,7 +56,7 @@ export default async function ProdutoPage({ params }: Props) {
       slug: p.slug,
       name: p.name,
       category: (p.categories as { name: string } | null)?.name ?? '',
-      price: p.price_cents / 100,
+      price: (p.promotional_price_cents ?? p.price_cents) / 100,
       oldPrice: p.promotional_price_cents ? p.price_cents / 100 : undefined,
       image: sorted[0]?.url ?? '/assets/flower-pendant-set-model.png',
       alt: sorted[1]?.url,
@@ -133,21 +134,8 @@ export default async function ProdutoPage({ params }: Props) {
             {product.stock > 0 ? `${product.stock} em estoque` : 'Fora de estoque'}
           </div>
 
-          {/* Quantity + Add to cart (placeholder) */}
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-primary-dark)' }}>
-              <button style={{ width: 36, height: 44, background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: 'var(--color-text-muted)' }}>−</button>
-              <span style={{ width: 36, textAlign: 'center', fontSize: 13 }}>1</span>
-              <button style={{ width: 36, height: 44, background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: 'var(--color-text-muted)' }}>+</button>
-            </div>
-            <button
-              disabled={product.stock === 0}
-              className="az-btn az-btn-primary"
-              style={{ flex: 1, opacity: product.stock === 0 ? 0.5 : 1, cursor: product.stock === 0 ? 'not-allowed' : 'pointer' }}
-            >
-              {product.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}
-            </button>
-          </div>
+          {/* Quantity + Add to cart */}
+          <AddToCart productId={product.id} productName={product.name} stock={product.stock} />
 
           {/* Trust badges */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16, borderTop: '1px solid var(--color-primary)', marginTop: 8 }}>

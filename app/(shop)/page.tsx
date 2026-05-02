@@ -208,7 +208,7 @@ export default async function HomePage() {
       slug: p.slug,
       name: p.name,
       category: (p.categories as { name: string } | null)?.name ?? '',
-      price: p.price_cents / 100,
+      price: (p.promotional_price_cents ?? p.price_cents) / 100,
       oldPrice: p.promotional_price_cents ? p.price_cents / 100 : undefined,
       image: sorted[0]?.url ?? '/assets/flower-pendant-set-model.png',
       alt: sorted[1]?.url,
@@ -279,31 +279,35 @@ export default async function HomePage() {
           {/* Right — image */}
           <div style={{ position: 'relative', background: 'var(--color-primary)' }}>
             <Image
-              src="/assets/flower-pendant-set-model.png"
-              alt="Conjunto Flor de Cristal — Ariz Joias"
+              src={featuredCards[0]?.image ?? '/assets/flower-pendant-set-model.png'}
+              alt={featuredCards[0]?.name ?? 'Ariz Joias — em destaque'}
               fill
               priority
               sizes="55vw"
               className="object-cover"
             />
             {/* Floating product card */}
-            <div style={{ position: 'absolute', bottom: 40, left: 40, background: 'var(--color-bg)', padding: '18px 22px', display: 'flex', gap: 14, alignItems: 'center', maxWidth: 320, boxShadow: 'var(--shadow-md)' }}>
-              <div style={{ width: 54, height: 64, background: 'var(--color-surface)', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                <Image src="/assets/flower-pendant-set.png" alt="Conjunto Flor de Cristal" fill className="object-cover" sizes="54px" />
+            {featuredCards[0] && (
+              <div style={{ position: 'absolute', bottom: 40, left: 40, background: 'var(--color-bg)', padding: '18px 22px', display: 'flex', gap: 14, alignItems: 'center', maxWidth: 320, boxShadow: 'var(--shadow-md)' }}>
+                <div style={{ width: 54, height: 64, background: 'var(--color-surface)', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                  <Image src={featuredCards[0].alt ?? featuredCards[0].image} alt={featuredCards[0].name} fill className="object-cover" sizes="54px" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>em destaque</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, marginTop: 2 }}>{featuredCards[0].name}</div>
+                  <div className="az-price" style={{ fontSize: 12, marginTop: 2 }}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(featuredCards[0].price)}
+                  </div>
+                </div>
+                <Link
+                  href={`/produto/${featuredCards[0].slug}`}
+                  style={{ background: 'var(--color-text)', color: 'var(--color-bg)', border: 'none', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                  aria-label="Ver produto"
+                >
+                  <IconArrowRight s={14} />
+                </Link>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>em destaque</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, marginTop: 2 }}>Conjunto Flor de Cristal</div>
-                <div className="az-price" style={{ fontSize: 12, marginTop: 2 }}>R$ 389,00</div>
-              </div>
-              <Link
-                href="/produto/conjunto-flor-de-cristal"
-                style={{ background: 'var(--color-text)', color: 'var(--color-bg)', border: 'none', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                aria-label="Ver produto"
-              >
-                <IconArrowRight s={14} />
-              </Link>
-            </div>
+            )}
           </div>
         </div>
       </section>

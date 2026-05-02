@@ -280,11 +280,6 @@ export function ProductForm({
         <div style={{ display: 'flex', gap: 32 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13 }}>
             <input
-              type="hidden"
-              name="is_active"
-              value="false"
-            />
-            <input
               type="checkbox"
               name="is_active"
               value="true"
@@ -294,11 +289,6 @@ export function ProductForm({
             Produto ativo (visível na loja)
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13 }}>
-            <input
-              type="hidden"
-              name="is_featured"
-              value="false"
-            />
             <input
               type="checkbox"
               name="is_featured"

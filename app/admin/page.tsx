@@ -40,6 +40,7 @@ export default async function AdminDashboard() {
     supabase
       .from('products')
       .select('id, name, slug, stock, is_active')
+      .eq('is_active', true)
       .lt('stock', 5)
       .order('stock', { ascending: true })
       .limit(5),

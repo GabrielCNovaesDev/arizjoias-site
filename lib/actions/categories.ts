@@ -2,10 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/actions/auth-guard';
+import { deleteImage } from '@/lib/supabase/storage';
 
 export async function createCategory(formData: FormData) {
-  const supabase = await createClient();
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
   const name = (formData.get('name') as string).trim();
   const slug = (formData.get('slug') as string).trim();
@@ -44,7 +46,8 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(id: string, formData: FormData) {
-  const supabase = await createClient();
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
   const name = (formData.get('name') as string).trim();
   const slug = (formData.get('slug') as string).trim();
@@ -81,7 +84,8 @@ export async function updateCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
-  const supabase = await createClient();
+  const { error: authError, supabase } = await requireAdmin();
+  if (authError || !supabase) return { error: authError ?? 'Erro de autenticação.' };
 
   // Check for active products
   const { count } = await supabase
@@ -96,8 +100,29 @@ export async function deleteCategory(id: string) {
     };
   }
 
+  // Fetch image_url before deleting so we can remove from Storage
+  const { data: category } = await supabase
+    .from('categories')
+    .select('image_url')
+    .eq('id', id)
+    .single();
+
   const { error } = await supabase.from('categories').delete().eq('id', id);
   if (error) return { error: error.message };
+
+  // Remove image from Storage (best-effort — don't fail if this errors)
+  if (category?.image_url) {
+    try {
+      const url = new URL(category.image_url);
+      // Path after /object/public/categories/
+      const pathMatch = url.pathname.match(/\/object\/public\/categories\/(.+)/);
+      if (pathMatch) {
+        await deleteImage('categories', pathMatch[1]);
+      }
+    } catch {
+      // Non-fatal: image cleanup failure shouldn't block the delete
+    }
+  }
 
   revalidatePath('/admin/categorias');
   revalidatePath('/');

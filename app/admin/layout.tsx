@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single();
 
@@ -24,11 +24,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/');
   }
 
+  const displayName = profile?.full_name ?? user.email ?? 'Admin';
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-surface)' }}>
       <AdminSidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <AdminHeader />
+        <AdminHeader displayName={displayName} />
         <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
           {children}
         </main>
