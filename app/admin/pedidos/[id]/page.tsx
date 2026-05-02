@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
@@ -49,6 +49,12 @@ interface Props {
 export default async function AdminPedidoDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
+
+  // Explicit admin check
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?next=/admin/pedidos/${id}`);
+  const { data: authProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (authProfile?.role !== 'admin') redirect('/');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: order } = await (supabase as any)

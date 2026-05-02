@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { centsToReais } from '@/lib/utils/currency';
@@ -51,6 +52,12 @@ interface Props {
 export default async function AdminPedidosPage({ searchParams }: Props) {
   const { status, q } = await searchParams;
   const supabase = await createClient();
+
+  // Explicit admin check — middleware is a second layer, not the only one
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login?next=/admin/pedidos');
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') redirect('/');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)

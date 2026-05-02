@@ -104,10 +104,19 @@ export function OrderPageClient({ orderId }: OrderPageClientProps) {
     fetchOrder();
   }, [fetchOrder]);
 
-  // Poll every 5 seconds while pending_payment
+  // Poll every 5 seconds while pending_payment, stop after 10 minutes
   useEffect(() => {
     if (!order || order.status !== 'pending_payment') return;
-    const interval = setInterval(fetchOrder, 5000);
+    let attempts = 0;
+    const MAX_ATTEMPTS = 120; // 10 minutes at 5s intervals
+    const interval = setInterval(() => {
+      attempts++;
+      if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(interval);
+        return;
+      }
+      fetchOrder();
+    }, 5000);
     return () => clearInterval(interval);
   }, [order, fetchOrder]);
 

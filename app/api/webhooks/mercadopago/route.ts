@@ -25,14 +25,22 @@ function verifySignature(request: Request, rawBody: string): boolean {
     .update(manifest)
     .digest('hex');
 
-  return crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+  try {
+    const v1Buf = Buffer.from(v1);
+    const expectedBuf = Buffer.from(expected);
+    // timingSafeEqual requires same length buffers
+    if (v1Buf.length !== expectedBuf.length) return false;
+    return crypto.timingSafeEqual(v1Buf, expectedBuf);
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
 
-  // Verify signature in production
-  if (process.env.NODE_ENV === 'production') {
+  // Verify signature whenever secret is configured (not just in production)
+  if (process.env.MERCADO_PAGO_WEBHOOK_SECRET) {
     if (!verifySignature(request, rawBody)) {
       return Response.json({ error: 'Invalid signature' }, { status: 401 });
     }

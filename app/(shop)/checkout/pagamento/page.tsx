@@ -59,6 +59,7 @@ export default function PagamentoPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addressId, setAddressId] = useState<string | null>(null);
 
   // Redirect if cart is empty or no shipping selected
   useEffect(() => {
@@ -69,30 +70,23 @@ export default function PagamentoPage() {
     }
   }, [items.length, selectedShipping, router]);
 
-  // Get saved address from localStorage (set by checkout step 1)
-  const [address, setAddress] = useState<{
-    recipientName: string;
-    zipCode: string;
-    street: string;
-    number: string;
-    complement?: string;
-    district: string;
-    city: string;
-    state: string;
-  } | null>(null);
-
+  // Read addressId from localStorage (set by checkout step 1)
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('ariz-checkout-address');
-      if (saved) setAddress(JSON.parse(saved));
+      const saved = localStorage.getItem('ariz-checkout-address-id');
+      if (saved) setAddressId(saved);
     } catch {
       // ignore
     }
   }, []);
 
   async function handlePay() {
-    if (!selectedShipping || !address) {
+    if (!selectedShipping) {
       setError('Dados de entrega incompletos. Volte ao checkout.');
+      return;
+    }
+    if (!addressId) {
+      setError('Endereço de entrega não encontrado. Volte ao checkout e selecione um endereço.');
       return;
     }
 
@@ -106,14 +100,11 @@ export default function PagamentoPage() {
         body: JSON.stringify({
           items: items.map((i) => ({
             productId: i.productId,
-            name: i.name,
-            slug: i.slug,
-            imageUrl: i.imageUrl,
-            priceCents: i.priceCents,
             quantity: i.quantity,
           })),
           shipping: selectedShipping,
-          address,
+          addressId,
+          paymentMethod,
         }),
       });
 
@@ -124,8 +115,14 @@ export default function PagamentoPage() {
         return;
       }
 
-      // Clear cart before redirecting to MP
+      if (!data.initPoint) {
+        setError('Erro ao obter URL de pagamento. Tente novamente.');
+        return;
+      }
+
+      // Clear cart only after we have a valid redirect URL
       clear();
+      localStorage.removeItem('ariz-checkout-address-id');
 
       // Redirect to Mercado Pago Checkout Pro
       window.location.href = data.initPoint;
@@ -137,6 +134,8 @@ export default function PagamentoPage() {
   }
 
   if (items.length === 0 || !selectedShipping) return null;
+
+  const missingAddress = !addressId;
 
   return (
     <div style={{ background: 'var(--color-bg)', minHeight: '80vh', padding: '48px 48px 96px' }}>
@@ -183,6 +182,17 @@ export default function PagamentoPage() {
               </div>
             ))}
           </div>
+
+          {/* Missing address warning */}
+          {missingAddress && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', padding: '12px 16px', fontSize: 13, color: '#92400e' }}>
+              Endereço de entrega não encontrado.{' '}
+              <Link href="/checkout" style={{ color: '#92400e', fontWeight: 500 }}>
+                Volte ao checkout
+              </Link>{' '}
+              e selecione um endereço antes de continuar.
+            </div>
+          )}
 
           {/* Payment method selection */}
           <div>
@@ -234,11 +244,16 @@ export default function PagamentoPage() {
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <button
               onClick={handlePay}
-              disabled={loading}
+              disabled={loading || missingAddress}
               className="az-btn az-btn-primary"
-              style={{ opacity: loading ? 0.6 : 1, minWidth: 200 }}
+              style={{ opacity: loading || missingAddress ? 0.5 : 1, minWidth: 200 }}
             >
-              {loading ? 'Processando...' : 'Pagar agora →'}
+              {loading ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+                  Processando...
+                </span>
+              ) : 'Pagar agora →'}
             </button>
             <Link href="/checkout" style={{ fontSize: 11, color: 'var(--color-text-light)', letterSpacing: '0.1em' }}>
               ← Voltar ao endereço
@@ -283,19 +298,6 @@ export default function PagamentoPage() {
               <span style={{ color: 'var(--color-gold)' }}>{centsToReais(total)}</span>
             </div>
           </div>
-
-          {address && (
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--color-primary)' }}>
-              <div style={{ fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 6 }}>
-                Entrega para
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
-                {address.recipientName}<br />
-                {address.street}, {address.number}{address.complement ? `, ${address.complement}` : ''}<br />
-                {address.city} / {address.state}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

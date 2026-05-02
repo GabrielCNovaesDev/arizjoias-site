@@ -51,18 +51,9 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
 
   function handleContinue(e: React.MouseEvent) {
     if (!canContinue || !selectedAddr) return;
-    // Persist address to localStorage for the payment page
+    // Persist only the addressId — backend validates ownership
     try {
-      localStorage.setItem('ariz-checkout-address', JSON.stringify({
-        recipientName: selectedAddr.recipient_name,
-        zipCode: selectedAddr.zip_code,
-        street: selectedAddr.street,
-        number: selectedAddr.number,
-        complement: selectedAddr.complement ?? undefined,
-        district: selectedAddr.district,
-        city: selectedAddr.city,
-        state: selectedAddr.state,
-      }));
+      localStorage.setItem('ariz-checkout-address-id', selectedAddressId ?? '');
     } catch {
       // ignore storage errors
     }

@@ -46,6 +46,8 @@ export function OrderActions({ orderId, currentStatus }: OrderActionsProps) {
         setShowCancelConfirm(false);
         setShowTrackingModal(false);
         setTrackingCode('');
+        // Auto-clear success message after 3s
+        setTimeout(() => setSuccess(null), 3000);
       }
     });
   }
