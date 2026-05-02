@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<title>Ariz Joias — Walkthrough</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="shared/tokens.css"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0a0a; overflow: hidden; height: 100%; }
+  body { font-family: 'Jost', system-ui, sans-serif; color: #FDFAF8; }
+
+  .stage {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    background: #0a0a0a;
+  }
+  .canvas-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; min-height: 0;
+  }
+  .canvas {
+    width: 1440px; height: 900px;
+    background: #FDFAF8; position: relative;
+    flex-shrink: 0; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    transform-origin: center;
+  }
+
+  /* Scene caption */
+  .caption {
+    position: absolute; left: 40px; bottom: 40px; z-index: 100;
+    background: rgba(20, 18, 16, 0.92); backdrop-filter: blur(8px);
+    color: #FDFAF8; padding: 14px 20px;
+    border-left: 2px solid #8B9778;
+    max-width: 420px;
+    animation: capFade .5s ease both;
+  }
+  @keyframes capFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .cap-eyebrow {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: #B8C2A8; margin-bottom: 6px;
+  }
+  .cap-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 400; line-height: 1.2;
+  }
+
+  /* Cursor overlay */
+  .cursor {
+    position: absolute; z-index: 200;
+    width: 22px; height: 22px;
+    pointer-events: none;
+    transition: left .8s cubic-bezier(.4,.0,.2,1), top .8s cubic-bezier(.4,.0,.2,1);
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+  }
+  .cursor.click::after {
+    content: ''; position: absolute; inset: -10px;
+    border: 2px solid #8B9778; border-radius: 50%;
+    animation: clickRipple .5s ease-out;
+  }
+  @keyframes clickRipple {
+    0% { transform: scale(0.3); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+
+  /* Playback bar */
+  .bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 22px; background: rgba(18,16,14,0.96);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: #FDFAF8; flex-shrink: 0;
+  }
+  .bar-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 16px;
+    font-weight: 400; margin-right: auto; letter-spacing: 0.02em;
+  }
+  .bar-tag {
+    font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #8B9778;
+  }
+  .bar-btn {
+    background: rgba(255,255,255,0.08); color: #FDFAF8;
+    border: none; padding: 9px 14px; cursor: pointer;
+    font-family: inherit; font-size: 10.5px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    transition: background .2s;
+  }
+  .bar-btn:hover { background: rgba(139,151,120,0.3); }
+  .bar-btn.play { background: #8B9778; }
+  .bar-time {
+    font-family: ui-monospace, monospace; font-size: 11px;
+    color: #B8C2A8; min-width: 78px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .bar-track {
+    flex: 1; height: 4px; background: rgba(255,255,255,0.08);
+    position: relative; cursor: pointer; border-radius: 2px;
+    margin: 0 4px;
+  }
+  .bar-track-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: #8B9778; border-radius: 2px;
+    transition: width 0.05s linear;
+  }
+  .bar-scene-markers {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .bar-scene-marker {
+    position: absolute; top: -4px; width: 1px; height: 12px;
+    background: rgba(255,255,255,0.2);
+  }
+
+  /* Iframe live view */
+  .liveframe {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: none; background: #FDFAF8;
+  }
+
+  /* Vignette intro */
+  .intro {
+    position: absolute; inset: 0; z-index: 300;
+    background: #2C2320; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 18px;
+    animation: introOut 1.2s ease 2.5s forwards;
+  }
+  @keyframes introOut {
+    to { opacity: 0; pointer-events: none; }
+  }
+  .intro-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 96px; font-weight: 300; color: #FDFAF8;
+    letter-spacing: 0.24em; padding-left: 0.24em;
+    animation: introIn 1s ease both;
+  }
+  .intro-sub {
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #B8C2A8;
+    animation: introIn 1s ease 0.3s both;
+  }
+  @keyframes introIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Outro */
+  .outro {
+    position: absolute; inset: 0; z-index: 300;
+    background: #2C2320; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 18px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .8s ease;
+  }
+  .outro.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="canvas-wrap">
+    <div class="canvas" id="canvas">
+      <iframe id="live" class="liveframe" src="Preview.html"></iframe>
+      <div class="cursor" id="cursor" style="left: 720px; top: 450px;">
+        <svg viewBox="0 0 24 24" width="22" height="22">
+          <path d="M4 2l16 10-7 2-2 7-7-19z" fill="#FDFAF8" stroke="#2C2320" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="caption" id="caption" style="display:none">
+        <div class="cap-eyebrow" id="cap-eyebrow"></div>
+        <div class="cap-title" id="cap-title"></div>
+      </div>
+
+      <div class="intro" id="intro">
+        <div class="intro-title">ARIZ</div>
+        <div class="intro-sub">Walkthrough · E-commerce</div>
+      </div>
+      <div class="outro" id="outro">
+        <div class="intro-title" style="font-size: 54px;">Obrigada <em style="font-style: italic; color: #B8C2A8;">por visitar</em></div>
+        <div class="intro-sub">arizjoias.com.br</div>
+      </div>
+    </div>
+  </div>
+  <div class="bar">
+    <div class="bar-title">Ariz Joias <span class="bar-tag" style="margin-left: 10px;">· walkthrough</span></div>
+    <button class="bar-btn" id="btn-reset">⟲ Reiniciar</button>
+    <button class="bar-btn play" id="btn-play">▶ Play</button>
+    <div class="bar-time" id="time">0:00 / 0:50</div>
+    <div class="bar-track" id="track">
+      <div class="bar-track-fill" id="fill"></div>
+      <div class="bar-scene-markers" id="markers"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════ Walkthrough timeline ═══════════════
+// Scenes drive: scroll positions, page nav, cursor position, caption
+// All actions operate on the iframe (Preview.html) via postMessage-free
+// direct access (same-origin).
+
+const SCENES = [
+  { t: 0,    dur: 3.0,  caption: ['Abertura', 'Joias com leveza e alma'], scroll: 0, cursor: [720, 450] },
+  { t: 3,    dur: 4.0,  caption: ['Hero editorial', 'Coleção primavera 2026'], page: 'home', scroll: 0, cursor: [380, 420] },
+  { t: 7,    dur: 4.0,  caption: ['Universos', 'Navegação por categoria'], scroll: 820, cursor: [360, 620] },
+  { t: 11,   dur: 4.5,  caption: ['Cápsula trevo', 'Edição limitada · 200 peças'], scroll: 1500, cursor: [860, 540] },
+  { t: 15.5, dur: 4.5,  caption: ['Recém chegadas', 'Produtos com hover e favoritar'], scroll: 2300, cursor: [480, 620], hover: 'card' },
+  { t: 20,   dur: 4.5,  caption: ['Manifesto da marca', 'Prata 925 · feito à mão em SP'], scroll: 3100, cursor: [720, 500] },
+  { t: 24.5, dur: 3.5,  caption: ['Listagem por categoria', 'Filtros funcionais'], page: 'plp', scroll: 0, cursor: [240, 520] },
+  { t: 28,   dur: 4.0,  caption: ['Filtro de material', 'Seleção múltipla com feedback visual'], page: 'plp', scroll: 340, cursor: [300, 340], click: 'filter' },
+  { t: 32,   dur: 4.0,  caption: ['Página de produto', 'Galeria, variantes, tamanhos'], page: 'pdp', scroll: 0, cursor: [900, 480] },
+  { t: 36,   dur: 4.0,  caption: ['Adicionar à sacola', 'Drawer abre com frete grátis progressivo'], page: 'pdp', scroll: 0, cursor: [1020, 620], click: 'cart' },
+  { t: 40,   dur: 4.0,  caption: ['Embalagem presente', 'Cartão, laço e caixa assinatura — cortesia'], page: 'pdp', cart: true, scroll: 0, cursor: [1220, 500] },
+  { t: 44,   dur: 3.5,  caption: ['Avaliações verificadas', 'Prova social com review editorial'], page: 'pdp', scroll: 900, cursor: [720, 420] },
+  { t: 47.5, dur: 2.5,  caption: ['Encerramento', 'arizjoias.com.br'], outro: true },
+];
+
+const TOTAL = 50;
+
+const liveIframe = document.getElementById('live');
+const cursor = document.getElementById('cursor');
+const caption = document.getElementById('caption');
+const capEyebrow = document.getElementById('cap-eyebrow');
+const capTitle = document.getElementById('cap-title');
+const intro = document.getElementById('intro');
+const outro = document.getElementById('outro');
+const playBtn = document.getElementById('btn-play');
+const resetBtn = document.getElementById('btn-reset');
+const fill = document.getElementById('fill');
+const track = document.getElementById('track');
+const timeEl = document.getElementById('time');
+const markersEl = document.getElementById('markers');
+
+// Markers
+SCENES.forEach(s => {
+  const m = document.createElement('div');
+  m.className = 'bar-scene-marker';
+  m.style.left = `${(s.t / TOTAL) * 100}%`;
+  markersEl.appendChild(m);
+});
+
+let playing = false;
+let time = 0;
+let raf = null;
+let lastTs = null;
+let currentScene = -1;
+let iframeReady = false;
+
+liveIframe.addEventListener('load', () => {
+  iframeReady = true;
+  // give react a moment
+  setTimeout(() => applyScene(sceneAt(time), true), 400);
+});
+
+function sceneAt(t) {
+  for (let i = SCENES.length - 1; i >= 0; i--) {
+    if (t >= SCENES[i].t) return i;
+  }
+  return 0;
+}
+
+function applyScene(idx, force = false) {
+  if (idx === currentScene && !force) return;
+  currentScene = idx;
+  const s = SCENES[idx];
+
+  // Caption
+  if (s.caption) {
+    caption.style.display = 'block';
+    caption.style.animation = 'none';
+    void caption.offsetHeight;
+    caption.style.animation = 'capFade .5s ease both';
+    capEyebrow.textContent = s.caption[0];
+    capTitle.textContent = s.caption[1];
+  } else {
+    caption.style.display = 'none';
+  }
+
+  // Outro / intro gate
+  if (s.outro) outro.classList.add('visible');
+  else outro.classList.remove('visible');
+
+  // Cursor
+  if (s.cursor) {
+    cursor.style.left = s.cursor[0] + 'px';
+    cursor.style.top = s.cursor[1] + 'px';
+  }
+  if (s.click) {
+    cursor.classList.remove('click');
+    void cursor.offsetHeight;
+    cursor.classList.add('click');
+    setTimeout(() => cursor.classList.remove('click'), 600);
+  }
+
+  // Iframe operations
+  if (!iframeReady) return;
+  try {
+    const ifWin = liveIframe.contentWindow;
+    const ifDoc = liveIframe.contentDocument;
+    if (!ifWin || !ifDoc) return;
+
+    // Navigation via global nav hook
+    if (s.page && ifWin.__arizNav) {
+      ifWin.__arizNav(s.page);
+    }
+
+    // Scroll (after a beat to let page render)
+    if (typeof s.scroll === 'number') {
+      setTimeout(() => {
+        ifWin.scrollTo({ top: s.scroll, behavior: 'smooth' });
+      }, 150);
+    }
+
+    // Cart drawer open
+    if (s.cart && ifWin.__arizOpenCart) ifWin.__arizOpenCart();
+  } catch (e) { console.warn(e); }
+}
+
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+  time += dt;
+  if (time >= TOTAL) {
+    time = TOTAL;
+    playing = false;
+    playBtn.textContent = '↺ Reassistir';
+  }
+  updateUI();
+  if (playing) raf = requestAnimationFrame(tick);
+}
+
+function updateUI() {
+  const pct = (time / TOTAL) * 100;
+  fill.style.width = pct + '%';
+  const fmt = (t) => {
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+  timeEl.textContent = `${fmt(time)} / ${fmt(TOTAL)}`;
+
+  if (time < 2.5) {
+    intro.style.opacity = '';
+    intro.style.pointerEvents = '';
+  } else {
+    intro.style.opacity = '0';
+    intro.style.pointerEvents = 'none';
+  }
+
+  applyScene(sceneAt(time));
+}
+
+playBtn.addEventListener('click', () => {
+  if (time >= TOTAL) {
+    time = 0;
+    applyScene(0, true);
+  }
+  playing = !playing;
+  playBtn.textContent = playing ? '❚❚ Pausar' : '▶ Play';
+  if (playing) {
+    lastTs = null;
+    raf = requestAnimationFrame(tick);
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  time = 0;
+  playing = false;
+  playBtn.textContent = '▶ Play';
+  intro.style.opacity = '';
+  intro.style.pointerEvents = '';
+  intro.style.animation = 'none';
+  void intro.offsetHeight;
+  intro.style.animation = 'introOut 1.2s ease 2.5s forwards';
+  currentScene = -1;
+  applyScene(0, true);
+  updateUI();
+});
+
+track.addEventListener('click', (e) => {
+  const rect = track.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  time = Math.max(0, Math.min(TOTAL, pct * TOTAL));
+  updateUI();
+});
+
+// Scale canvas to fit viewport
+function fit() {
+  const canvas = document.getElementById('canvas');
+  const wrap = canvas.parentElement;
+  const sx = wrap.clientWidth / 1440;
+  const sy = wrap.clientHeight / 900;
+  const s = Math.min(sx, sy) * 0.96;
+  canvas.style.transform = `scale(${s})`;
+}
+fit();
+window.addEventListener('resize', fit);
+
+updateUI();
+
+// Auto-start after iframe has a moment to be ready
+let autoStartTried = false;
+setInterval(() => {
+  if (iframeReady && !autoStartTried) {
+    autoStartTried = true;
+    setTimeout(() => {
+      playing = true;
+      playBtn.textContent = '❚❚ Pausar';
+      lastTs = null;
+      raf = requestAnimationFrame(tick);
+    }, 1500);
+  }
+}, 300);
+</script>
+
+</body>
+</html>

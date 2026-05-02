@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<title>Ariz Joias — Preview navegável</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="shared/tokens.css"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #FDFAF8; }
+  body { font-family: 'Jost', system-ui, sans-serif; }
+
+  /* Floating device toggle */
+  .device-toggle {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: #2C2320; color: #FDFAF8; padding: 6px;
+    display: flex; gap: 4px; z-index: 999;
+    box-shadow: 0 14px 32px rgba(44,35,32,0.22);
+    border-radius: 40px;
+  }
+  .device-toggle button {
+    background: none; border: none; color: #FDFAF8;
+    font-family: 'Jost', sans-serif; font-size: 10.5px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 9px 18px; cursor: pointer; border-radius: 40px;
+    transition: background .2s;
+  }
+  .device-toggle button.active { background: #8B9778; }
+
+  /* Mobile frame wrapper */
+  .mobile-stage {
+    min-height: 100vh;
+    display: flex; justify-content: center;
+    padding: 40px 20px 120px;
+    background: #f0eee9;
+  }
+  .mobile-device {
+    width: 390px; height: 820px;
+    border: 10px solid #2C2320; border-radius: 36px;
+    overflow: auto; background: #FDFAF8;
+    box-shadow: 0 30px 80px rgba(44,35,32,0.25);
+    scrollbar-width: none;
+  }
+  .mobile-device::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="device-toggle">
+  <button id="btn-desktop" class="active" onclick="setDevice('desktop')">Desktop</button>
+  <button id="btn-mobile" onclick="setDevice('mobile')">Mobile</button>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="shared/primitives.jsx"></script>
+<script type="text/babel" src="shared/chrome.jsx"></script>
+<script type="text/babel" src="pages/home.jsx"></script>
+<script type="text/babel" src="pages/plp-pdp.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+function Preview() {
+  const [device, setDevice] = React.useState('desktop');
+  const [page, setPage] = React.useState('home');
+  const [param, setParam] = React.useState(null);
+
+  const [openCartSignal, setOpenCartSignal] = React.useState(0);
+
+  React.useEffect(() => {
+    window.setDevice = (d) => {
+      setDevice(d);
+      document.getElementById('btn-desktop').classList.toggle('active', d === 'desktop');
+      document.getElementById('btn-mobile').classList.toggle('active', d === 'mobile');
+    };
+    window.__arizNav = (p, extra) => { setPage(p); setParam(extra); window.scrollTo({ top: 0 }); };
+    window.__arizOpenCart = () => setOpenCartSignal(n => n + 1);
+  }, []);
+
+  const onNav = (p, extra) => {
+    setPage(p); setParam(extra);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const m = document.querySelector('.mobile-device');
+    if (m) m.scrollTop = 0;
+  };
+
+  const mobile = device === 'mobile';
+  const CartOpener = () => {
+    const shop = useShop();
+    React.useEffect(() => { if (openCartSignal > 0) shop.setCartOpen(true); }, [openCartSignal]);
+    return null;
+  };
+  const content = (
+    <ShopProvider>
+      <CartOpener />
+      <Header mobile={mobile} activePage={page} onNav={onNav} />
+      {page === 'home' && <HomePage mobile={mobile} onNav={onNav} heroVariant="split" />}
+      {page === 'plp' && <PLPPage mobile={mobile} onNav={onNav} category={param || 'Brincos'} />}
+      {page === 'pdp' && <PDPPage mobile={mobile} onNav={onNav} productId={param || 'flower-pendant-set'} />}
+      <Footer mobile={mobile} />
+      <CartDrawer mobile={mobile} />
+    </ShopProvider>
+  );
+
+  if (mobile) {
+    return <div className="mobile-stage"><div className="mobile-device"><div className="arizroot">{content}</div></div></div>;
+  }
+  return <div className="arizroot">{content}</div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Preview />);
+</script>
+</body>
+</html>

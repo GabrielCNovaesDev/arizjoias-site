@@ -1,381 +1,369 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { ProductCard } from '@/components/product/ProductCard';
-import { productRepository, reviewRepository } from '@/lib/db';
+import { ProductCard, type ProductCardData } from '@/components/shop/product-card';
+import { ArizLogoMark } from '@/components/ui/ariz-logo';
+import { CategoryCard, InstagramGrid } from '@/components/shop/home-interactive';
 
-const categories = [
+/* ── Icons ── */
+const IconArrowRight = ({ s = 14 }: { s?: number }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14" /><path d="m13 6 6 6-6 6" />
+  </svg>
+);
+const IconShip = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="13" height="10" rx="1" /><path d="M15 10h4l3 3v4h-7z" /><circle cx="7" cy="19" r="1.6" /><circle cx="17" cy="19" r="1.6" />
+  </svg>
+);
+const IconShield = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z" /><path d="m9 12 2 2 4-4" />
+  </svg>
+);
+const IconBox = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 8 12 4l9 4v9l-9 4-9-4Z" /><path d="M3 8l9 4 9-4" /><path d="M12 12v9" />
+  </svg>
+);
+const IconHeart = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20s-7-4.5-7-10.2A4.3 4.3 0 0 1 12 6.5a4.3 4.3 0 0 1 7 3.3C19 15.5 12 20 12 20Z" />
+  </svg>
+);
+
+/* ── Data ── */
+const PRODUCTS: ProductCardData[] = [
   {
-    name: 'Anéis',
-    slug: 'aneis',
-    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80',
-    description: 'Solitários, aparadores e alianças',
+    id: 'flower-pendant-set',
+    slug: 'conjunto-flor-de-cristal',
+    name: 'Conjunto Flor de Cristal',
+    category: 'Conjuntos',
+    price: 389,
+    oldPrice: 449,
+    image: '/assets/flower-pendant-set-model.png',
+    alt: '/assets/flower-pendant-set.png',
+    tag: 'exclusivo',
   },
   {
-    name: 'Colares',
-    slug: 'colares',
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&q=80',
-    description: 'Gargantilhas, chokers e longos',
+    id: 'heart-necklace-set',
+    slug: 'colar-duo-coracao',
+    name: 'Colar Duo Coração',
+    category: 'Colares',
+    price: 219,
+    image: '/assets/set-heart-necklace.png',
+    alt: '/assets/butterfly-ring.png',
+    tag: 'mais amado',
   },
   {
-    name: 'Brincos',
-    slug: 'brincos',
-    image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=600&q=80',
-    description: 'Argolas, pontos de luz e ear cuffs',
+    id: 'emerald-clover',
+    slug: 'brincos-trevo-esmeralda',
+    name: 'Brincos Trevo Esmeralda',
+    category: 'Brincos',
+    price: 279,
+    image: '/assets/emerald-clover-earring-model.png',
+    alt: '/assets/emerald-clover-earring.png',
+    tag: 'novo',
   },
   {
-    name: 'Pulseiras',
-    slug: 'pulseiras',
-    image: 'https://images.unsplash.com/photo-1573408301185-9519f94f0b4c?w=600&q=80',
-    description: 'Riviera, elos e braceletes',
+    id: 'crystal-hoop',
+    slug: 'argola-baguete',
+    name: 'Argola Baguete',
+    category: 'Brincos',
+    price: 329,
+    image: '/assets/earring-crystal-hoop.png',
+    tag: 'novo',
   },
   {
-    name: 'Sets',
-    slug: 'sets',
-    image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=600&q=80',
-    description: 'Conjuntos presenteáveis completos',
+    id: 'flower-bracelet',
+    slug: 'pulseira-jardim',
+    name: 'Pulseira Jardim',
+    category: 'Pulseiras',
+    price: 459,
+    image: '/assets/flower-bracelet.png',
+    alt: '/assets/flower-pendant-alt.png',
+    tag: 'exclusivo',
+  },
+  {
+    id: 'pearl-infinity',
+    slug: 'pulseira-infinito-perola',
+    name: 'Pulseira Infinito Pérola',
+    category: 'Pulseiras',
+    price: 249,
+    image: '/assets/pearl-infinity-bracelet.png',
+    alt: '/assets/silver-drop-bracelet.png',
+  },
+  {
+    id: 'circle-pendant',
+    slug: 'colar-circulo-pave',
+    name: 'Colar Círculo Pavê',
+    category: 'Colares',
+    price: 299,
+    image: '/assets/circle-pendant-necklace.png',
+    alt: '/assets/flower-pendant-alt.png',
+  },
+  {
+    id: 'butterfly-ring',
+    slug: 'anel-borboleta',
+    name: 'Anel Borboleta',
+    category: 'Anéis',
+    price: 189,
+    image: '/assets/butterfly-ring.png',
+    tag: 'mais amado',
   },
 ];
 
-const differentials = [
-  {
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-      </svg>
-    ),
-    title: 'Qualidade Premium',
-    text: 'Todas as peças passam por controle rigoroso de qualidade. Ouro 18k, prata 925 e banhos de alta durabilidade.',
-  },
-  {
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-        <rect x="2" y="7" width="20" height="14" rx="2" />
-        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-        <line x1="12" y1="12" x2="12" y2="16" />
-        <line x1="10" y1="14" x2="14" y2="14" />
-      </svg>
-    ),
-    title: 'Embalagem Exclusiva',
-    text: 'Cada joia é entregue em embalagem presenteável de luxo — perfeita para presentear ou se presentear.',
-  },
-  {
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 6v6l4 2" />
-      </svg>
-    ),
-    title: 'Entrega Rápida',
-    text: 'Enviamos para todo o Brasil. Frete grátis acima de R$ 299 e entrega expressa disponível.',
-  },
-  {
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-      </svg>
-    ),
-    title: 'Feitas com Alma',
-    text: 'Cada peça carrega a essência da Ariz Joias — leveza, feminilidade e sofisticação em cada detalhe.',
-  },
+const NEW_ARRIVALS = PRODUCTS.filter((p) => p.tag === 'novo' || p.tag === 'exclusivo').slice(0, 4);
+const BEST_SELLERS = PRODUCTS.filter((p) => p.tag === 'mais amado' || !p.tag).slice(0, 4);
+
+const CATEGORIES = [
+  { name: 'Colares', img: '/assets/circle-pendant-necklace.png', count: 42, slug: 'colares' },
+  { name: 'Brincos', img: '/assets/earring-crystal-hoop.png', count: 67, slug: 'brincos' },
+  { name: 'Anéis', img: '/assets/butterfly-ring.png', count: 38, slug: 'aneis' },
+  { name: 'Pulseiras', img: '/assets/pearl-infinity-bracelet.png', count: 29, slug: 'pulseiras' },
 ];
+
+const VALUES = [
+  { icon: <IconShip />, title: 'Entrega cuidada', text: 'Em até 3 dias úteis, em caixa assinatura.' },
+  { icon: <IconShield />, title: 'Garantia vitalícia', text: 'Contra defeito de fabricação, sempre.' },
+  { icon: <IconBox />, title: 'Embalagem presente', text: 'Cartão escrito à mão, cortesia da casa.' },
+  { icon: <IconHeart />, title: 'Trocas em 30 dias', text: 'Sem perguntas, sem burocracia.' },
+];
+
+const INSTAGRAM_IMGS = [
+  '/assets/flower-pendant-set-model.png',
+  '/assets/set-heart-necklace.png',
+  '/assets/silver-drop-bracelet.png',
+  '/assets/earring-crystal-hoop.png',
+  '/assets/pearl-infinity-bracelet.png',
+  '/assets/butterfly-ring.png',
+];
+
+/* ── Reusable product grid section ── */
+function ProductGridSection({
+  eyebrow,
+  title,
+  subtitle,
+  products,
+}: {
+  eyebrow: string;
+  title: React.ReactNode;
+  subtitle?: string;
+  products: ProductCardData[];
+}) {
+  return (
+    <section style={{ padding: '96px 48px', background: 'var(--color-bg)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
+        <div>
+          <div className="az-eyebrow" style={{ marginBottom: 12 }}>{eyebrow}</div>
+          <h2 className="az-display" style={{ fontSize: 52, margin: 0, fontWeight: 300, lineHeight: 1.05 }}>{title}</h2>
+          {subtitle && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 12, maxWidth: 460 }}>{subtitle}</p>}
+        </div>
+        <Link href="/catalogo" className="az-btn-link">
+          Ver todas <IconArrowRight s={12} />
+        </Link>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 28 }}>
+        {products.map((p, i) => (
+          <div key={p.id} className="az-reveal" style={{ animationDelay: `${i * 0.06}s` }}>
+            <ProductCard product={p} priority={i < 2} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
-  const featured = productRepository.findFeatured().slice(0, 4);
-  const newArrivals = productRepository.findAll().slice(0, 8);
-  const reviews = reviewRepository.findAll();
-
   return (
-    <MainLayout>
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="relative h-screen min-h-[600px] max-h-[900px] overflow-hidden grain-overlay">
-        <Image
-          src="https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=1800&q=85"
-          alt="Joias Ariz — coleção especial"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-          style={{ filter: 'brightness(0.82)' }}
-        />
-        <div
-          className="absolute inset-0 z-10"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(44,44,44,0.55) 0%, rgba(92,107,80,0.2) 60%, transparent 100%)',
-          }}
-        />
-        <div className="relative z-20 h-full flex items-center px-8 md:px-16 lg:px-24">
-          <div className="max-w-2xl">
-            <p
-              className="font-body text-xs tracking-[0.3em] uppercase mb-6 animate-fade-up"
-              style={{ color: 'var(--cream-light)', opacity: 0.8 }}
-            >
-              Nova Coleção 2025
-            </p>
-            <h1
-              className="font-display font-light leading-[1.1] mb-8 animate-fade-up animate-delay-100"
-              style={{ color: 'var(--cream-light)', fontSize: 'clamp(2.8rem, 7vw, 6rem)' }}
-            >
-              Joias com
-              <br />
-              <em>Leveza</em> e Alma
-            </h1>
-            <p
-              className="font-body font-light text-lg leading-relaxed mb-10 animate-fade-up animate-delay-200"
-              style={{ color: 'rgba(242,237,233,0.85)', maxWidth: '480px' }}
-            >
-              Peças artesanais que traduzem elegância natural. Cada joia conta uma história de quem a usa.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
-              <Link href="/catalog" className="btn-primary">
-                Explorar Coleção
-              </Link>
-              <Link
-                href="/catalog?featured=true"
-                className="font-body text-xs tracking-[0.12em] uppercase py-3.5 px-8 border inline-flex items-center gap-2 transition-all duration-300 hover:bg-white/10"
-                style={{ color: 'var(--cream-light)', borderColor: 'rgba(242,237,233,0.5)' }}
-              >
-                Ver Destaques
-              </Link>
-            </div>
-          </div>
-        </div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 animate-float">
-          <span className="font-body text-[10px] tracking-[0.2em] uppercase" style={{ color: 'rgba(242,237,233,0.5)' }}>
-            Rolar
-          </span>
-          <div className="w-px h-12" style={{ background: 'linear-gradient(to bottom, rgba(242,237,233,0.5), transparent)' }} />
-        </div>
-      </section>
-
-      {/* ── Gold divider ────────────────────────────────────────── */}
-      <section className="py-6 px-6" style={{ backgroundColor: 'var(--cream)' }}>
-        <div className="max-w-7xl mx-auto flex items-center justify-center">
-          <div className="divider-gold w-full max-w-xl">
-            <span className="font-body text-[11px] tracking-[0.25em] uppercase whitespace-nowrap" style={{ color: 'var(--gold)' }}>
-              Ariz Joias
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Featured products ───────────────────────────────────── */}
-      <section className="py-24 px-6 lg:px-12" style={{ backgroundColor: 'var(--warm-white)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
-            <div>
-              <p className="font-body text-xs tracking-[0.2em] uppercase mb-3" style={{ color: 'var(--sage-light)' }}>
-                Selecionados para você
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-light" style={{ color: 'var(--charcoal)' }}>
-                Peças em Destaque
-              </h2>
-            </div>
-            <Link href="/catalog?featured=true" className="btn-outline self-start md:self-auto">
-              Ver todos
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-12">
-            {featured.map((p, i) => (
-              <ProductCard key={p.id} product={p} priority={i < 2} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Editorial banner ────────────────────────────────────── */}
-      <section className="relative h-80 md:h-[500px] overflow-hidden">
-        <Image
-          src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1600&q=85"
-          alt="Editorial Ariz Joias"
-          fill
-          sizes="100vw"
-          className="object-cover object-top"
-          style={{ filter: 'brightness(0.75)' }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(to right, rgba(44,44,44,0.6) 0%, rgba(92,107,80,0.15) 100%)' }}
-        />
-        <div className="relative z-10 h-full flex items-center px-8 md:px-24">
-          <div>
-            <p className="font-body text-xs tracking-[0.25em] uppercase mb-4" style={{ color: 'var(--gold-light)' }}>
-              Coleção Especial
-            </p>
-            <h2 className="font-display font-light text-4xl md:text-6xl mb-6" style={{ color: 'var(--cream-light)' }}>
-              Sets Presenteáveis
-            </h2>
-            <p className="font-body font-light mb-8" style={{ color: 'rgba(242,237,233,0.8)', maxWidth: '380px' }}>
-              Conjuntos completos em embalagem exclusiva. O presente perfeito para quem você ama.
-            </p>
-            <Link href="/catalog?category=sets" className="btn-gold">
-              Explorar Sets
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Categories ──────────────────────────────────────────── */}
-      <section className="py-24 px-6 lg:px-12" style={{ backgroundColor: 'var(--cream-light)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="font-body text-xs tracking-[0.2em] uppercase mb-3" style={{ color: 'var(--sage-light)' }}>
-              Navegue por categoria
-            </p>
-            <h2 className="font-display text-4xl md:text-5xl font-light" style={{ color: 'var(--charcoal)' }}>
-              Encontre sua Joia
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categories.map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/catalog?category=${cat.slug}`}
-                className="group relative overflow-hidden aspect-[3/4] block"
-              >
-                <Image
-                  src={cat.image}
-                  alt={cat.name}
-                  fill
-                  sizes="(max-width: 640px) 50vw, 20vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  style={{ filter: 'brightness(0.7)' }}
-                />
-                <div
-                  className="absolute inset-0 transition-opacity duration-300 group-hover:opacity-100 opacity-0"
-                  style={{ backgroundColor: 'rgba(92,107,80,0.35)' }}
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-end p-5">
-                  <h3 className="font-display text-xl font-light" style={{ color: 'var(--cream-light)' }}>
-                    {cat.name}
-                  </h3>
-                  <p className="font-body text-xs mt-1 opacity-80 text-center" style={{ color: 'var(--cream-light)' }}>
-                    {cat.description}
-                  </p>
-                  <div
-                    className="mt-3 h-px w-8 transition-all duration-300 group-hover:w-16"
-                    style={{ backgroundColor: 'var(--gold)' }}
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── New arrivals ────────────────────────────────────────── */}
-      <section className="py-24 px-6 lg:px-12" style={{ backgroundColor: 'var(--warm-white)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
-            <div>
-              <p className="font-body text-xs tracking-[0.2em] uppercase mb-3" style={{ color: 'var(--sage-light)' }}>
-                Acabaram de chegar
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl font-light" style={{ color: 'var(--charcoal)' }}>
-                Novas Coleções
-              </h2>
-            </div>
-            <Link href="/catalog" className="btn-outline self-start md:self-auto">
-              Ver catálogo completo
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-            {newArrivals.map((p, i) => (
-              <ProductCard key={p.id} product={p} priority={i < 4} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Differentials ───────────────────────────────────────── */}
-      <section className="py-24 px-6 lg:px-12" style={{ backgroundColor: 'var(--cream)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="font-body text-xs tracking-[0.2em] uppercase mb-3" style={{ color: 'var(--sage-light)' }}>
-              Por que escolher
-            </p>
-            <h2 className="font-display text-4xl md:text-5xl font-light" style={{ color: 'var(--charcoal)' }}>
-              A Essência Ariz
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-            {differentials.map((d, i) => (
-              <div key={i} className="flex flex-col items-center text-center gap-5">
-                <div style={{ color: 'var(--sage)' }}>{d.icon}</div>
-                <h3 className="font-display text-xl font-light" style={{ color: 'var(--charcoal)' }}>
-                  {d.title}
-                </h3>
-                <p className="font-body text-sm font-light leading-relaxed opacity-60">{d.text}</p>
+    <>
+      {/* ── Hero — split editorial ─────────────────────────────── */}
+      <section style={{ background: 'var(--color-bg)', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', minHeight: 'calc(100vh - 120px)' }}>
+          {/* Left — text */}
+          <div style={{ padding: '72px 64px', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+            <div className="az-reveal">
+              <div className="az-eyebrow" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ width: 28, height: 1, background: 'var(--color-sage)', display: 'inline-block' }} />
+                coleção primavera 2026
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Reviews ─────────────────────────────────────────────── */}
-      <section className="py-24 px-6 lg:px-12" style={{ backgroundColor: 'var(--warm-white)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="font-body text-xs tracking-[0.2em] uppercase mb-3" style={{ color: 'var(--sage-light)' }}>
-              Quem usa Ariz
-            </p>
-            <h2 className="font-display text-4xl md:text-5xl font-light" style={{ color: 'var(--charcoal)' }}>
-              O que dizem nossas clientes
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {reviews.map((r) => (
-              <div
-                key={r.id}
-                className="p-8 flex flex-col gap-4"
-                style={{ backgroundColor: 'var(--cream-light)', border: '1px solid var(--cream-dark)' }}
-              >
-                <div className="flex gap-1">
-                  {Array.from({ length: r.rating }).map((_, i) => (
-                    <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="var(--gold)">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="font-display text-lg font-light italic leading-relaxed" style={{ color: 'var(--charcoal)' }}>
-                  &ldquo;{r.comment}&rdquo;
-                </p>
-                <div className="mt-auto pt-4 border-t" style={{ borderColor: 'var(--cream-dark)' }}>
-                  <p className="font-body text-sm font-medium" style={{ color: 'var(--sage)' }}>{r.userName}</p>
-                  <p className="font-body text-xs opacity-40">Cliente verificada</p>
-                </div>
+              <h1 className="az-display" style={{ fontSize: 104, fontWeight: 300, margin: 0, lineHeight: 0.92, color: 'var(--color-text)' }}>
+                Joias com<br />
+                <em className="az-display-italic" style={{ color: 'var(--color-sage-dark)' }}>leveza</em>
+                <br />&amp; alma
+              </h1>
+              <p style={{ fontSize: 15, color: 'var(--color-text-muted)', lineHeight: 1.75, maxWidth: 440, marginTop: 32, fontWeight: 300 }}>
+                Peças em prata 925 desenhadas para acompanhar mulheres que sentem — porque um bom gesto nunca pede licença para existir.
+              </p>
+              <div style={{ display: 'flex', gap: 16, marginTop: 36, flexWrap: 'wrap' }}>
+                <Link href="/catalogo" className="az-btn az-btn-primary">
+                  Explorar coleção <IconArrowRight s={14} />
+                </Link>
+                <Link href="#manifesto" className="az-btn az-btn-ghost">Nossa história</Link>
               </div>
-            ))}
+              {/* Stats */}
+              <div style={{ display: 'flex', gap: 40, marginTop: 80, paddingTop: 32, borderTop: '1px solid var(--color-primary)' }}>
+                {[
+                  { value: '925', label: 'prata certificada' },
+                  { value: '9', label: 'etapas de acabamento' },
+                  { value: '∞', label: 'garantia vitalícia' },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <div className="az-display" style={{ fontSize: 26, color: 'var(--color-sage-dark)' }}>{s.value}</div>
+                    <div style={{ fontSize: 10, color: 'var(--color-text-muted)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 2 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right — image */}
+          <div style={{ position: 'relative', background: 'var(--color-primary)' }}>
+            <Image
+              src="/assets/flower-pendant-set-model.png"
+              alt="Conjunto Flor de Cristal — Ariz Joias"
+              fill
+              priority
+              sizes="55vw"
+              className="object-cover"
+            />
+            {/* Floating product card */}
+            <div style={{ position: 'absolute', bottom: 40, left: 40, background: 'var(--color-bg)', padding: '18px 22px', display: 'flex', gap: 14, alignItems: 'center', maxWidth: 320, boxShadow: 'var(--shadow-md)' }}>
+              <div style={{ width: 54, height: 64, background: 'var(--color-surface)', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                <Image src="/assets/flower-pendant-set.png" alt="Conjunto Flor de Cristal" fill className="object-cover" sizes="54px" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>em destaque</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, marginTop: 2 }}>Conjunto Flor de Cristal</div>
+                <div className="az-price" style={{ fontSize: 12, marginTop: 2 }}>R$ 389,00</div>
+              </div>
+              <Link
+                href="/produto/conjunto-flor-de-cristal"
+                style={{ background: 'var(--color-text)', color: 'var(--color-bg)', border: 'none', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                aria-label="Ver produto"
+              >
+                <IconArrowRight s={14} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Instagram CTA ────────────────────────────────────────── */}
+      {/* ── Category strip ─────────────────────────────────────── */}
+      <section style={{ padding: '88px 48px', background: 'var(--color-bg)', position: 'relative' }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div className="az-eyebrow" style={{ marginBottom: 16 }}>universos</div>
+          <h2 className="az-display" style={{ fontSize: 56, margin: 0 }}>
+            <em className="az-display-italic">Para cada</em> sentimento,
+            <br />uma peça que se faz memória
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+          {CATEGORIES.map((c, i) => (
+            <CategoryCard key={c.name} name={c.name} img={c.img} count={c.count} slug={c.slug} index={i} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── Editorial feature — Coleção Trevo ─────────────────── */}
+      <section style={{ background: 'var(--color-surface-2)', padding: '88px 64px', position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden' }}>
+              <Image
+                src="/assets/emerald-clover-earring-model.png"
+                alt="Brincos Trevo Esmeralda — modelo"
+                fill
+                sizes="45vw"
+                className="object-cover"
+              />
+            </div>
+            <div style={{ position: 'absolute', bottom: 20, right: 20, background: 'var(--color-bg)', padding: '14px 18px', maxWidth: 240 }}>
+              <div className="az-eyebrow" style={{ color: 'var(--color-sage-dark)', marginBottom: 6 }}>cápsula primavera</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, lineHeight: 1.3 }}>Edição limitada de 200 peças numeradas.</div>
+            </div>
+          </div>
+          <div style={{ padding: '0 20px' }}>
+            <div className="az-eyebrow" style={{ marginBottom: 20 }}>✿ coleção trevo</div>
+            <h2 className="az-display" style={{ fontSize: 72, margin: '0 0 24px', lineHeight: 1 }}>
+              Verde como<br />
+              <em className="az-display-italic" style={{ color: 'var(--color-sage-dark)' }}>um bom presságio</em>
+            </h2>
+            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', lineHeight: 1.8, maxWidth: 440, marginBottom: 28 }}>
+              Quartzos verdes com lapidação coração, montados um a um em prata 925. Uma cápsula que celebra a intuição feminina — aquele instinto que sussurra antes mesmo da certeza chegar.
+            </p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Link href="/produto/brincos-trevo-esmeralda" className="az-btn az-btn-primary">
+                Ver a cápsula <IconArrowRight s={14} />
+              </Link>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span className="az-price" style={{ fontSize: 16 }}>a partir de R$ 279,00</span>
+                <span style={{ fontSize: 10.5, color: 'var(--color-text-light)', letterSpacing: '0.08em' }}>6x sem juros</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── New arrivals ───────────────────────────────────────── */}
+      <ProductGridSection
+        eyebrow="recém chegadas"
+        title={<>Novas peças, <em className="az-display-italic">velhos encantos</em></>}
+        subtitle="As chegadas desta semana, escolhidas para quem gosta de ser a primeira a notar."
+        products={NEW_ARRIVALS}
+      />
+
+      {/* ── Brand story ────────────────────────────────────────── */}
       <section
-        className="py-20 px-6 text-center"
-        style={{ backgroundColor: 'var(--sage)', color: 'var(--cream-light)' }}
+        id="manifesto"
+        style={{ background: 'var(--color-text)', color: 'var(--color-text-on-dark)', padding: '104px 64px', position: 'relative', overflow: 'hidden' }}
       >
-        <p className="font-body text-xs tracking-[0.3em] uppercase mb-4 opacity-70">Siga nossa jornada</p>
-        <h2 className="font-display text-3xl md:text-5xl font-light mb-4">@arizjoias</h2>
-        <p className="font-body font-light opacity-70 mb-8">
-          Inspire-se com looks e bastidores da nossa coleção
-        </p>
-        <a
-          href="https://instagram.com/arizjoias"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 font-body text-xs tracking-[0.15em] uppercase py-3.5 px-8 border transition-all duration-300 hover:bg-white/10"
-          style={{ borderColor: 'rgba(242,237,233,0.4)', color: 'var(--cream-light)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="2" y="2" width="20" height="20" rx="5" />
-            <circle cx="12" cy="12" r="4" />
-            <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-          </svg>
-          Seguir no Instagram
-        </a>
+        <div className="az-grain" />
+        <div style={{ maxWidth: 780, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <ArizLogoMark size={72} color="var(--color-sage-light)" stroke={1.1} />
+          <div className="az-eyebrow" style={{ color: 'var(--color-sage-light)', marginTop: 28, marginBottom: 22 }}>desde 2019</div>
+          <h2 className="az-display" style={{ fontSize: 52, margin: 0, fontWeight: 300, color: 'var(--color-bg)', lineHeight: 1.1 }}>
+            A casa Ariz nasceu de um desejo simples —<br />
+            <em className="az-display-italic" style={{ color: 'var(--color-primary)' }}>que joia fosse um gesto,</em>
+            <br />não uma vitrine.
+          </h2>
+          <p style={{ fontSize: 14, color: 'rgba(253,250,248,0.7)', lineHeight: 1.9, maxWidth: 520, margin: '32px auto 36px', fontWeight: 300 }}>
+            Trabalhamos exclusivamente com prata 925 certificada e pedras selecionadas à mão. Cada peça passa por nove etapas de acabamento no nosso atelier em São Paulo — porque a delicadeza do produto final só aparece quando cada detalhe invisível foi pensado com cuidado.
+          </p>
+          <button className="az-btn az-btn-ghost" style={{ borderColor: 'var(--color-primary-light)', color: 'var(--color-bg)' }}>
+            Nosso manifesto
+          </button>
+        </div>
       </section>
-    </MainLayout>
+
+      {/* ── Best sellers ───────────────────────────────────────── */}
+      <ProductGridSection
+        eyebrow="mais amadas"
+        title={<>Aquelas que <em className="az-display-italic">não voltam</em> para a vitrine</>}
+        subtitle="Escolhidas pelas nossas clientes semana após semana."
+        products={BEST_SELLERS}
+      />
+
+      {/* ── Values / trust strip ───────────────────────────────── */}
+      <section style={{ padding: '64px 48px', background: 'var(--color-surface)', borderTop: '1px solid var(--color-primary)', borderBottom: '1px solid var(--color-primary)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+          {VALUES.map((v) => (
+            <div key={v.title} style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', textAlign: 'center', color: 'var(--color-sage-dark)' }}>
+              {v.icon}
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--color-text)', fontWeight: 400 }}>{v.title}</div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{v.text}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Instagram grid ─────────────────────────────────────── */}
+      <section style={{ padding: '80px 48px 96px', textAlign: 'center' }}>
+        <div className="az-eyebrow" style={{ marginBottom: 10 }}>@arizjoias</div>
+        <h3 className="az-display" style={{ fontSize: 40, margin: '0 0 36px' }}>
+          Nossa comunidade, <em className="az-display-italic">nosso espelho</em>
+        </h3>
+        <InstagramGrid images={INSTAGRAM_IMGS} />
+      </section>
+    </>
   );
 }
