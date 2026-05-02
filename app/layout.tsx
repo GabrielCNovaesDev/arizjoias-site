@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Header } from '@/components/shop/header';
-import { Footer } from '@/components/shop/footer';
 
 export const metadata: Metadata = {
   title: {
@@ -18,13 +16,12 @@ export const metadata: Metadata = {
   },
 };
 
+// Root layout — sem header/footer (cada grupo de rotas tem o seu próprio layout)
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
       <body className="antialiased min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

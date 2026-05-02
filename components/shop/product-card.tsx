@@ -30,12 +30,6 @@ const IconHeart = ({ filled = false }: { filled?: boolean }) => (
   </svg>
 );
 
-const IconArrowRight = () => (
-  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 12h14" /><path d="m13 6 6 6-6 6" />
-  </svg>
-);
-
 const TAG_COLORS: Record<string, string> = {
   novo: 'var(--color-sage)',
   exclusivo: 'var(--color-gold)',
