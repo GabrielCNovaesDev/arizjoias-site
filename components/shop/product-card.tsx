@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCartStore } from '@/stores/cart-store';
 
 export interface ProductCardData {
   id: string;
@@ -37,7 +36,6 @@ const TAG_COLORS: Record<string, string> = {
 };
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
-  const addItem = useCartStore((s) => s.addItem);
   const [hover, setHover] = useState(false);
   const [fav, setFav] = useState(false);
   const [justFav, setJustFav] = useState(false);
@@ -50,12 +48,6 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     setFav((v) => !v);
     setJustFav(true);
     setTimeout(() => setJustFav(false), 500);
-  }
-
-  function handleAddToCart(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    addItem(product.id);
   }
 
   return (
@@ -154,9 +146,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             </span>
           </button>
 
-          {/* Quick add */}
-          <button
-            onClick={handleAddToCart}
+          {/* Quick add — links to product page for full add-to-cart with dimensions */}
+          <Link
+            href={`/produto/${product.slug}`}
             style={{
               position: 'absolute',
               left: 14,
@@ -175,11 +167,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               transform: hover ? 'translateY(0)' : 'translateY(6px)',
               opacity: hover ? 1 : 0,
               transition: 'all 0.35s cubic-bezier(.2,.7,.3,1)',
+              textAlign: 'center',
+              textDecoration: 'none',
+              display: 'block',
             }}
-            aria-label={`Adicionar ${product.name} ao carrinho`}
+            aria-label={`Ver ${product.name} e adicionar ao carrinho`}
+            tabIndex={hover ? 0 : -1}
           >
-            Adicionar
-          </button>
+            Ver produto
+          </Link>
         </div>
 
         {/* Product info */}

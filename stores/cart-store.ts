@@ -1,17 +1,43 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export interface CartItem {
   productId: string;
+  slug: string;
+  name: string;
+  imageUrl: string;
+  priceCents: number;
   quantity: number;
+  weightGrams: number;
+  widthCm: number;
+  heightCm: number;
+  lengthCm: number;
+  maxStock: number;
+}
+
+export interface ShippingOption {
+  id: number;
+  name: string;
+  company: string;
+  priceCents: number;
+  deliveryDays: number;
 }
 
 interface CartStore {
   items: CartItem[];
-  addItem: (productId: string, quantity?: number) => void;
+  selectedShipping: ShippingOption | null;
+
+  addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
+  clear: () => void;
+  setShipping: (option: ShippingOption | null) => void;
+
+  getSubtotalCents: () => number;
+  getTotalCents: () => number;
+  getItemCount: () => number;
+
+  // Legacy alias used by header.tsx
   totalItems: () => number;
 }
 
@@ -19,26 +45,33 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      selectedShipping: null,
 
-      addItem(productId, quantity = 1) {
+      addItem(item, quantity = 1) {
         set((state) => {
-          const existing = state.items.find((i) => i.productId === productId);
+          const existing = state.items.find((i) => i.productId === item.productId);
           if (existing) {
+            const newQty = Math.min(existing.quantity + quantity, item.maxStock);
             return {
               items: state.items.map((i) =>
-                i.productId === productId
-                  ? { ...i, quantity: i.quantity + quantity }
-                  : i
+                i.productId === item.productId ? { ...i, quantity: newQty } : i
               ),
             };
           }
-          return { items: [...state.items, { productId, quantity }] };
+          return {
+            items: [
+              ...state.items,
+              { ...item, quantity: Math.min(quantity, item.maxStock) },
+            ],
+          };
         });
       },
 
       removeItem(productId) {
         set((state) => ({
           items: state.items.filter((i) => i.productId !== productId),
+          // Reset shipping when cart changes
+          selectedShipping: null,
         }));
       },
 
@@ -49,21 +82,44 @@ export const useCartStore = create<CartStore>()(
         }
         set((state) => ({
           items: state.items.map((i) =>
-            i.productId === productId ? { ...i, quantity } : i
+            i.productId === productId
+              ? { ...i, quantity: Math.min(quantity, i.maxStock) }
+              : i
           ),
+          selectedShipping: null,
         }));
       },
 
-      clearCart() {
-        set({ items: [] });
+      clear() {
+        set({ items: [], selectedShipping: null });
       },
 
-      totalItems() {
+      setShipping(option) {
+        set({ selectedShipping: option });
+      },
+
+      getSubtotalCents() {
+        return get().items.reduce(
+          (sum, item) => sum + item.priceCents * item.quantity,
+          0
+        );
+      },
+
+      getTotalCents() {
+        const subtotal = get().getSubtotalCents();
+        const shipping = get().selectedShipping?.priceCents ?? 0;
+        return subtotal + shipping;
+      },
+
+      getItemCount() {
         return get().items.reduce((sum, i) => sum + i.quantity, 0);
       },
+
+      // Legacy alias
+      totalItems() {
+        return get().getItemCount();
+      },
     }),
-    {
-      name: "ariz-cart",
-    }
+    { name: 'ariz-cart' }
   )
 );

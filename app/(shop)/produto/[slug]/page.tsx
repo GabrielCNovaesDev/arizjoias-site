@@ -135,7 +135,20 @@ export default async function ProdutoPage({ params }: Props) {
           </div>
 
           {/* Quantity + Add to cart */}
-          <AddToCart productId={product.id} productName={product.name} stock={product.stock} />
+          <AddToCart
+            product={{
+              productId: product.id,
+              slug: product.slug,
+              name: product.name,
+              imageUrl: sortedImages[0]?.url ?? '',
+              priceCents: displayPrice,
+              weightGrams: product.weight_grams ?? 0,
+              widthCm: product.width_cm ?? 0,
+              heightCm: product.height_cm ?? 0,
+              lengthCm: product.length_cm ?? 0,
+              maxStock: product.stock,
+            }}
+          />
 
           {/* Trust badges */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16, borderTop: '1px solid var(--color-primary)', marginTop: 8 }}>

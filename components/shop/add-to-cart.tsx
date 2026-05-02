@@ -1,15 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useCartStore } from '@/stores/cart-store';
+import { useCartStore, type CartItem } from '@/stores/cart-store';
 
 interface AddToCartProps {
-  productId: string;
-  productName: string;
-  stock: number;
+  product: Omit<CartItem, 'quantity'>;
 }
 
-export function AddToCart({ productId, productName, stock }: AddToCartProps) {
+export function AddToCart({ product }: AddToCartProps) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
@@ -19,23 +17,21 @@ export function AddToCart({ productId, productName, stock }: AddToCartProps) {
   }
 
   function increment() {
-    setQty((q) => Math.min(stock, q + 1));
+    setQty((q) => Math.min(product.maxStock, q + 1));
   }
 
   function handleAdd() {
-    for (let i = 0; i < qty; i++) {
-      addItem(productId);
-    }
+    addItem(product, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
 
-  if (stock === 0) {
+  if (product.maxStock === 0) {
     return (
       <button
         disabled
         className="az-btn az-btn-primary"
-        style={{ opacity: 0.5, cursor: 'not-allowed', flex: 1 }}
+        style={{ opacity: 0.5, cursor: 'not-allowed' }}
       >
         Indisponível
       </button>
@@ -45,7 +41,14 @@ export function AddToCart({ productId, productName, stock }: AddToCartProps) {
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
       {/* Quantity */}
-      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-primary-dark)', flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          border: '1px solid var(--color-primary-dark)',
+          flexShrink: 0,
+        }}
+      >
         <button
           type="button"
           onClick={decrement}
@@ -78,15 +81,18 @@ export function AddToCart({ productId, productName, stock }: AddToCartProps) {
         <button
           type="button"
           onClick={increment}
-          disabled={qty >= stock}
+          disabled={qty >= product.maxStock}
           style={{
             width: 36,
             height: 44,
             background: 'none',
             border: 'none',
             fontSize: 18,
-            cursor: qty >= stock ? 'not-allowed' : 'pointer',
-            color: qty >= stock ? 'var(--color-text-light)' : 'var(--color-text-muted)',
+            cursor: qty >= product.maxStock ? 'not-allowed' : 'pointer',
+            color:
+              qty >= product.maxStock
+                ? 'var(--color-text-light)'
+                : 'var(--color-text-muted)',
             fontFamily: 'var(--font-body)',
           }}
           aria-label="Aumentar quantidade"
@@ -100,8 +106,12 @@ export function AddToCart({ productId, productName, stock }: AddToCartProps) {
         type="button"
         onClick={handleAdd}
         className="az-btn az-btn-primary"
-        style={{ flex: 1, background: added ? 'var(--color-sage-dark)' : undefined, transition: 'background 0.3s' }}
-        aria-label={`Adicionar ${productName} ao carrinho`}
+        style={{
+          flex: 1,
+          background: added ? 'var(--color-sage-dark)' : undefined,
+          transition: 'background 0.3s',
+        }}
+        aria-label={`Adicionar ${product.name} ao carrinho`}
       >
         {added ? '✓ Adicionado' : 'Adicionar ao carrinho'}
       </button>
