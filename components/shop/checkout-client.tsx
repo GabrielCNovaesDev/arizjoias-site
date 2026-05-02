@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cart-store';
 import { AddressForm } from '@/components/shop/address-form';
@@ -33,26 +33,42 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
     savedAddresses.find((a) => a.is_default)?.id ?? savedAddresses[0]?.id ?? null
   );
   const [showNewForm, setShowNewForm] = useState(savedAddresses.length === 0);
-  const [shippingAddress, setShippingAddress] = useState<AddressFromCep | null>(null);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [isPendingAddress, startAddressTransition] = useTransition();
+
+  // CEP of the currently selected address — drives ShippingCalculator
+  const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
+  const [shippingCep, setShippingCep] = useState<string>(
+    selectedAddr?.zip_code ?? ''
+  );
 
   const items = useCartStore((s) => s.items);
   const selectedShipping = useCartStore((s) => s.selectedShipping);
   const getSubtotalCents = useCartStore((s) => s.getSubtotalCents);
   const getTotalCents = useCartStore((s) => s.getTotalCents);
 
-  const canContinue = !!selectedAddressId && !!selectedShipping;
+  const canContinue = items.length > 0 && !!selectedAddressId && !!selectedShipping;
 
-  function handleAddressSaved(id: string) {
-    // Reload page to get fresh address list from server
-    window.location.reload();
-  }
-
-  async function handleSelectAddress(id: string) {
+  function handleAddressSaved(id: string, newAddress: Address) {
+    // Add to local list and select it — no reload needed
+    setAddresses((prev) => [newAddress, ...prev]);
     setSelectedAddressId(id);
-    await setDefaultAddress(id);
+    setShippingCep(newAddress.zip_code);
+    setShowNewForm(false);
   }
 
-  const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
+  async function handleSelectAddress(addr: Address) {
+    setAddressError(null);
+    setSelectedAddressId(addr.id);
+    setShippingCep(addr.zip_code);
+
+    startAddressTransition(async () => {
+      const result = await setDefaultAddress(addr.id);
+      if (result.error) {
+        setAddressError(result.error);
+      }
+    });
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 48, alignItems: 'start' }}>
@@ -66,7 +82,7 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
             { n: 2, label: 'Pagamento', active: false },
             { n: 3, label: 'Confirmação', active: false },
           ].map((step, i) => (
-            <div key={step.n} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            <div key={step.n} style={{ display: 'flex', alignItems: 'center' }}>
               {i > 0 && (
                 <div style={{ width: 32, height: 1, background: 'var(--color-primary-dark)', margin: '0 8px' }} />
               )}
@@ -98,6 +114,13 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 300, margin: '0 0 16px' }}>
               Endereço de entrega
             </h2>
+
+            {addressError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '10px 14px', fontSize: 12, marginBottom: 12 }}>
+                {addressError}
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {addresses.map((addr) => (
                 <label
@@ -107,7 +130,9 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
                     padding: '14px 16px',
                     border: `1px solid ${selectedAddressId === addr.id ? 'var(--color-sage)' : 'var(--color-primary-dark)'}`,
                     background: selectedAddressId === addr.id ? 'var(--color-sage-pale)' : 'var(--color-bg)',
-                    cursor: 'pointer', transition: 'all 0.15s',
+                    cursor: isPendingAddress ? 'wait' : 'pointer',
+                    transition: 'all 0.15s',
+                    opacity: isPendingAddress ? 0.7 : 1,
                   }}
                 >
                   <input
@@ -115,7 +140,8 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
                     name="address"
                     value={addr.id}
                     checked={selectedAddressId === addr.id}
-                    onChange={() => handleSelectAddress(addr.id)}
+                    onChange={() => handleSelectAddress(addr)}
+                    disabled={isPendingAddress}
                     style={{ accentColor: 'var(--color-sage-dark)', marginTop: 2, flexShrink: 0 }}
                   />
                   <div>
@@ -172,11 +198,12 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
               Opções de frete
             </h2>
             <ShippingCalculator
-              onAddressResolved={setShippingAddress}
+              defaultCep={shippingCep}
+              instanceId="checkout"
             />
             {!selectedShipping && (
               <p style={{ fontSize: 11, color: 'var(--color-text-light)', marginTop: 8 }}>
-                Digite o CEP acima para ver as opções de frete disponíveis.
+                Confirme o CEP acima para ver as opções de frete disponíveis.
               </p>
             )}
           </div>
@@ -199,7 +226,9 @@ export function CheckoutClient({ savedAddresses }: CheckoutClientProps) {
           </Link>
           {!canContinue && (
             <p style={{ fontSize: 11, color: 'var(--color-text-light)', marginTop: 8 }}>
-              {!selectedAddressId
+              {items.length === 0
+                ? 'Seu carrinho está vazio.'
+                : !selectedAddressId
                 ? 'Selecione ou cadastre um endereço de entrega.'
                 : 'Selecione uma opção de frete para continuar.'}
             </p>

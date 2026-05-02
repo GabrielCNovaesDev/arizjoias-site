@@ -6,7 +6,19 @@ import { saveAddress, type SaveAddressInput } from '@/app/(shop)/checkout/action
 import type { AddressFromCep } from '@/lib/viacep';
 
 interface AddressFormProps {
-  onSaved: (id: string) => void;
+  onSaved: (id: string, address: {
+    id: string;
+    recipient_name: string;
+    zip_code: string;
+    street: string;
+    number: string;
+    complement: string | null;
+    district: string;
+    city: string;
+    state: string;
+    label: string | null;
+    is_default: boolean;
+  }) => void;
   onCancel?: () => void;
 }
 
@@ -45,11 +57,24 @@ export function AddressForm({ onSaved, onCancel }: AddressFormProps) {
     }
 
     startTransition(async () => {
-      const result = await saveAddress(form as SaveAddressInput);
+      const input = form as SaveAddressInput;
+      const result = await saveAddress(input);
       if ('error' in result) {
         setError(result.error);
       } else {
-        onSaved(result.id);
+        onSaved(result.id, {
+          id: result.id,
+          recipient_name: input.recipient_name,
+          zip_code: input.zip_code.replace(/\D/g, ''),
+          street: input.street,
+          number: input.number,
+          complement: input.complement ?? null,
+          district: input.district,
+          city: input.city,
+          state: input.state,
+          label: input.label ?? null,
+          is_default: input.is_default,
+        });
       }
     });
   }
@@ -107,6 +132,7 @@ export function AddressForm({ onSaved, onCancel }: AddressFormProps) {
         onAddress={handleAddress}
         defaultValue={form.zip_code ?? ''}
         required
+        instanceId="address-form"
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12 }}>

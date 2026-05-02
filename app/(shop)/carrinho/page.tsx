@@ -25,8 +25,8 @@ export default function CarrinhoPage() {
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const selectedShipping = useCartStore((s) => s.selectedShipping);
-  const getSubtotalCents = useCartStore((s) => s.getSubtotalCents);
-  const getTotalCents = useCartStore((s) => s.getTotalCents);
+  const subtotal = useCartStore((s) => s.getSubtotalCents());
+  const total = useCartStore((s) => s.getTotalCents());
 
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -38,8 +38,6 @@ export default function CarrinhoPage() {
     }, 250);
   }
 
-  const subtotal = getSubtotalCents();
-  const total = getTotalCents();
   const canCheckout = items.length > 0 && !!selectedShipping;
 
   if (items.length === 0) {

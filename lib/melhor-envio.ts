@@ -39,9 +39,10 @@ export async function calculateShipping(
     (sum, i) => sum + i.priceCents * i.quantity,
     0
   );
+  // For an aggregated package, use max dimensions across all items
   const maxWidth = Math.max(...items.map((i) => i.widthCm));
   const maxHeight = Math.max(...items.map((i) => i.heightCm));
-  const totalLength = items.reduce((sum, i) => sum + i.lengthCm * i.quantity, 0);
+  const maxLength = Math.max(...items.map((i) => i.lengthCm));
 
   const payload = {
     from: { postal_code: cleanedOrigin },
@@ -49,7 +50,7 @@ export async function calculateShipping(
     package: {
       height: Math.max(2, maxHeight),        // Correios minimum: 2cm
       width: Math.max(11, maxWidth),         // Correios minimum: 11cm
-      length: Math.max(16, totalLength),     // Correios minimum: 16cm
+      length: Math.max(16, maxLength),       // Correios minimum: 16cm
       weight: Math.max(0.1, totalWeightKg),  // minimum: 100g
     },
     options: {
@@ -80,11 +81,17 @@ export async function calculateShipping(
 
   return (data as Record<string, unknown>[])
     .filter((opt) => !opt.error)
-    .map((opt) => ({
-      id: opt.id as number,
-      name: opt.name as string,
-      company: (opt.company as { name: string }).name,
-      priceCents: Math.round(parseFloat(opt.price as string) * 100),
-      deliveryDays: opt.delivery_time as number,
-    }));
+    .map((opt) => {
+      const rawPrice = parseFloat(opt.price as string);
+      const priceCents = isNaN(rawPrice) ? 0 : Math.round(rawPrice * 100);
+      const deliveryDays = typeof opt.delivery_time === 'number' ? opt.delivery_time : 0;
+      return {
+        id: opt.id as number,
+        name: String(opt.name ?? ''),
+        company: String((opt.company as { name: string } | null)?.name ?? ''),
+        priceCents,
+        deliveryDays,
+      };
+    })
+    .filter((opt) => opt.priceCents > 0); // Remove options with invalid price
 }

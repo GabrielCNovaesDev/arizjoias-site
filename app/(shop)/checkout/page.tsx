@@ -13,6 +13,9 @@ export default async function CheckoutPage() {
     redirect('/login?next=/checkout');
   }
 
+  // Note: cart is client-side (Zustand), so we can't check it server-side here.
+  // The CheckoutClient handles the empty cart case via canContinue logic.
+
   const { data: addresses } = await supabase
     .from('addresses')
     .select('id, recipient_name, zip_code, street, number, complement, district, city, state, label, is_default')

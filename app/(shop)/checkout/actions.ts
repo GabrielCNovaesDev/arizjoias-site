@@ -16,16 +16,58 @@ export interface SaveAddressInput {
   is_default: boolean;
 }
 
+const VALID_STATES = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+];
+
+const MAX_ADDRESSES_PER_USER = 20;
+
+function validateAddress(input: SaveAddressInput): string | null {
+  if (!input.recipient_name?.trim()) return 'Nome do destinatário é obrigatório.';
+  if (input.recipient_name.length > 120) return 'Nome muito longo.';
+
+  const zip = input.zip_code.replace(/\D/g, '');
+  if (zip.length !== 8) return 'CEP inválido.';
+
+  if (!input.street?.trim()) return 'Rua é obrigatória.';
+  if (input.street.length > 200) return 'Rua muito longa.';
+
+  if (!input.number?.trim()) return 'Número é obrigatório.';
+  if (input.number.length > 20) return 'Número muito longo.';
+
+  if (!input.district?.trim()) return 'Bairro é obrigatório.';
+  if (!input.city?.trim()) return 'Cidade é obrigatória.';
+
+  const state = input.state?.trim().toUpperCase();
+  if (!VALID_STATES.includes(state)) return 'Estado inválido. Use a sigla (ex: SP).';
+
+  if (input.label && input.label.length > 50) return 'Apelido muito longo.';
+  if (input.complement && input.complement.length > 100) return 'Complemento muito longo.';
+
+  return null;
+}
+
 export async function saveAddress(
   input: SaveAddressInput
 ): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Não autorizado.' };
+
+  const validationError = validateAddress(input);
+  if (validationError) return { error: validationError };
+
+  // Enforce max addresses per user
+  const { count } = await supabase
+    .from('addresses')
+    .select('*', { count: 'exact', head: true })
+    .eq('profile_id', user.id);
+
+  if ((count ?? 0) >= MAX_ADDRESSES_PER_USER) {
+    return { error: `Limite de ${MAX_ADDRESSES_PER_USER} endereços atingido.` };
+  }
 
   // If setting as default, unset all others first
   if (input.is_default) {
@@ -46,7 +88,7 @@ export async function saveAddress(
       complement: input.complement?.trim() || null,
       district: input.district.trim(),
       city: input.city.trim(),
-      state: input.state.trim(),
+      state: input.state.trim().toUpperCase(),
       label: input.label?.trim() || null,
       is_default: input.is_default,
     })
@@ -64,24 +106,30 @@ export async function saveAddress(
 export async function setDefaultAddress(addressId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Não autorizado.' };
 
-  // Unset all
+  // Verify ownership BEFORE making any changes
+  const { data: addr } = await supabase
+    .from('addresses')
+    .select('id')
+    .eq('id', addressId)
+    .eq('profile_id', user.id)
+    .single();
+
+  if (!addr) return { error: 'Endereço não encontrado.' };
+
+  // Unset all, then set new default
   await supabase
     .from('addresses')
     .update({ is_default: false })
     .eq('profile_id', user.id);
 
-  // Set new default
   const { error } = await supabase
     .from('addresses')
     .update({ is_default: true })
     .eq('id', addressId)
-    .eq('profile_id', user.id); // ensure ownership
+    .eq('profile_id', user.id);
 
   if (error) return { error: error.message };
 

@@ -9,6 +9,7 @@ interface CepInputProps {
   defaultValue?: string;
   label?: string;
   required?: boolean;
+  instanceId?: string; // unique suffix for id to avoid duplicate ids on same page
 }
 
 export function CepInput({
@@ -17,6 +18,7 @@ export function CepInput({
   defaultValue = '',
   label = 'CEP',
   required = false,
+  instanceId = 'default',
 }: CepInputProps) {
   const [value, setValue] = useState(defaultValue);
   const [loading, setLoading] = useState(false);
@@ -87,10 +89,12 @@ export function CepInput({
     letterSpacing: '0.08em',
   };
 
+  const inputId = `cep-input-${instanceId}`;
+
   return (
     <div>
       <label
-        htmlFor="cep-input"
+        htmlFor={inputId}
         style={{
           display: 'block',
           fontSize: 10,
@@ -104,7 +108,7 @@ export function CepInput({
       </label>
       <div style={{ position: 'relative' }}>
         <input
-          id="cep-input"
+          id={inputId}
           type="text"
           inputMode="numeric"
           autoComplete="postal-code"
@@ -113,7 +117,7 @@ export function CepInput({
           placeholder="00000-000"
           required={required}
           style={inputStyle}
-          aria-describedby={error ? 'cep-error' : undefined}
+          aria-describedby={error ? `${inputId}-error` : undefined}
           aria-invalid={!!error}
         />
         {loading && (
@@ -135,15 +139,15 @@ export function CepInput({
         )}
       </div>
       {error && (
-        <p
-          id="cep-error"
-          role="alert"
-          style={{
-            fontSize: 11,
-            color: '#b91c1c',
-            marginTop: 4,
-          }}
-        >
+      <p
+        id={`${inputId}-error`}
+        role="alert"
+        style={{
+          fontSize: 11,
+          color: '#b91c1c',
+          marginTop: 4,
+        }}
+      >
           {error}
         </p>
       )}
