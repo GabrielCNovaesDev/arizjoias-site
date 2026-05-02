@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArizLogoLockup } from '@/components/ui/ariz-logo';
 import { useCartStore } from '@/stores/cart-store';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 const ANNOUNCEMENT_MSGS = [
   'Frete grátis em pedidos acima de R$ 350',
@@ -118,6 +120,7 @@ function AnnouncementBar() {
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const totalItems = useCartStore((s) => s.totalItems());
 
   useEffect(() => {
@@ -125,6 +128,23 @@ export function Header() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    // Carrega sessão inicial
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    // Escuta mudanças de auth (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
+    window.location.href = '/';
+  }
 
   return (
     <>
@@ -248,9 +268,27 @@ export function Header() {
           <button style={btnIcon} aria-label="Buscar">
             <IconSearch />
           </button>
-          <Link href="/conta" style={btnIcon} aria-label="Minha conta">
-            <IconUser />
-          </Link>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <Link
+                href="/conta"
+                style={{ ...btnIcon, fontSize: 10.5, fontFamily: 'var(--font-body)', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}
+              >
+                {user.user_metadata?.full_name?.split(' ')[0] ?? 'Conta'}
+              </Link>
+              <button
+                onClick={handleLogout}
+                style={{ ...btnIcon, fontSize: 10.5, fontFamily: 'var(--font-body)', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}
+                aria-label="Sair"
+              >
+                Sair
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" style={btnIcon} aria-label="Entrar">
+              <IconUser />
+            </Link>
+          )}
           <button style={{ ...btnIcon, position: 'relative' }} aria-label="Favoritos">
             <IconHeart />
           </button>
